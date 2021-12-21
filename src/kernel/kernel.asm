@@ -9,9 +9,13 @@ msg: db "Hello", 0
 null: dd 0
 
 start:
-	push dword 0x0f
-	push msg
-	call print_char
+	push 2 ; row
+	push 10 ; col
+	push dword 0x0f ; attr
+	push msg ; str
+	call print_at
+	pop dword [null]
+	pop dword [null]
 	pop dword [null]
 	pop dword [null]
 
