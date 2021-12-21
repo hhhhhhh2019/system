@@ -2,36 +2,30 @@
 
 ; char ch, char col, char row, char attr
 print_char:
-	push eax
 	push ebp
-	push dword si
-	push ebx
+	push eax
+	push esi
 
 	mov ebp, esp
-	mov si, [ebp + 20 + 0]
-	mov ah, [ebp + 20 + 4]
+	mov esi, [ebp + 16 + 0]
+	mov ah, [ebp + 16 + 4]
 
 	mov ebp, VIDEO_ADDERS
 
 print_char_loop:
-	mov al, [si]
+	mov al, [esi]
 
 	cmp al, 0
-	jz print_char_end
+	je print_char_end
 
-	mov al, 'X'
-	mov ah, 0x0f
-	
 	mov [ebp], ax
 
-	inc si
+	inc esi
 	add ebp, 2
-
-	jmp print_char_loop
+jmp print_char_loop
 
 print_char_end:
-	pop ebx
-	pop dword si
-	pop ebp
+	pop esi
 	pop eax
+	pop ebp
 ret

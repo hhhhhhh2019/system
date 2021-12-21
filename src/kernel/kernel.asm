@@ -1,3 +1,4 @@
+[org 500h]
 [bits 32]
 
 jmp start

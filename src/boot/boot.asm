@@ -76,7 +76,7 @@ init_pm:
 	mov esp, ebp
 
 	mov ebx, welcome
-	call print
+	;call print
 	pop dword [null]
 	
 	jmp 500h
