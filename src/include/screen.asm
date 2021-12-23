@@ -1,3 +1,5 @@
+[bits 32]
+
 %define VIDEO_ADDERS 0xb8000
 %define MAX_ROWS 25
 %define MAX_COLS 80
@@ -12,11 +14,11 @@ print_char_at:
 	mov bl, [ebp + 12 + 0] ; ch
 	mov bh, [ebp + 12 + 4] ; attr
 	
-	push dword [ebp + 12 + 8] ; col
 	push dword [ebp + 12 + 12] ; row
+	push dword [ebp + 12 + 8] ; col
 	call get_offset
-	pop dword [null]
-	pop dword [null]
+	pop dword [0x505]
+	pop dword [0x505]
 
 	mov ebp, VIDEO_ADDERS
 	add ebp, eax
@@ -38,13 +40,15 @@ print_at:
 
 	mov ebp, esp
 
-	mov esi, [ebp + 16 + 0] ; str
+	
+	mov esi, [ebp + 4 * 4 + 4 * 0] ; str
 
-	push dword [ebp + 16 + 8] ; col
-	push dword [ebp + 16 + 12] ; row
+	
+	push dword [ebp + 4 * 4 + 4 * 3]
+	push dword [ebp + 4 * 4 + 4 * 2]
 	call get_offset
-	pop dword [null]
-	pop dword [null]
+	pop dword [0x505]
+	pop dword [0x505]
 
 	mov ebx, eax ; save offset
 
@@ -52,31 +56,28 @@ print_at_loop:
 	cmp byte [esi], 0
 	je print_at_end
 
-
-	push ebx
+	push dword ebx
 	call get_offset_row
-	pop ebx
+	pop dword ebx
 	push eax ; row
 
-	push ebx
+	push dword ebx
 	call get_offset_col
-	pop ebx
+	pop dword ebx
 	push eax ; col
-
-	push dword [ebp + 16 + 4] ; attr
-	push dword [esi] ; ch
 	
+	push dword [ebp + 4 * 4 + 4 * 1] ; attr
+	push dword [esi] ; ch
 	call print_char_at
-
-	pop dword [null]
-	pop dword [null]
-	pop dword [null]
-	pop dword [null]
-
+	pop dword [0x505]
+	pop dword [0x505]
+	pop dword [0x505]
+	pop dword [0x505]
 
 	inc esi
-	mov ebx, eax
-jmp print_at_end
+	inc ebx
+jmp print_at_loop
+	
 
 print_at_end:
 	pop ebx
@@ -95,11 +96,11 @@ get_offset:
 
 	mov ebp, esp
 
-	mov eax, [ebp + 12 + 0] ; row
+	mov eax, [ebp + 12 + 4] ; row
 	mov ebx, MAX_COLS
 	mul ebx ; eax = row * MAX_COLS
 
-	mov ebp, [ebp + 12 + 4]
+	mov ebp, [ebp + 12 + 0]
 	add eax, ebp ; eax += col
 
 	shl eax, 1 ; eax *= 2
@@ -137,19 +138,19 @@ get_offset_col:
 	mov ebp, esp
 
 	push dword [ebp + 12 + 0] ; offset
-	call get_offset_row ; arg(offset) already in stack
+	call get_offset_row
+	pop dword [0x505]
 
 	mov ebx, 2 * MAX_COLS
 	mul ebx ; eax = get_offset_row(offset)*2*MAX_COLS
 
-	push eax
-	pop eax
-	pop ebx
+	mov ebx, [ebp + 12 + 0]
 
-	sub eax, ebx ; eax = offset - eax
+	sub ebx, eax ; ebx = offset - eax
 
-	mov ebx, 2
-	div ebx
+	shr ebx, 1 ; ebx /= 2
+
+	mov eax, ebx
 
 	push ebx
 	pop ebp

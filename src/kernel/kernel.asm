@@ -3,10 +3,11 @@
 
 jmp start
 
+null: dd 0
+
 %include "src/include/screen.asm"
 
 msg: db "Hello", 0
-null: dd 0
 
 start:
 	push 0 ; row
