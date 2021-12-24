@@ -17,8 +17,7 @@ print_char_at:
 	push dword [ebp + 12 + 12] ; row
 	push dword [ebp + 12 + 8] ; col
 	call get_offset
-	pop dword [0x505]
-	pop dword [0x505]
+	add esp, 4 * 2
 
 	mov ebp, VIDEO_ADDERS
 	add ebp, eax
@@ -47,8 +46,7 @@ print_at:
 	push dword [ebp + 4 * 4 + 4 * 3]
 	push dword [ebp + 4 * 4 + 4 * 2]
 	call get_offset
-	pop dword [0x505]
-	pop dword [0x505]
+	add esp, 4 * 2
 
 	mov ebx, eax ; save offset
 
@@ -69,10 +67,7 @@ print_at_loop:
 	push dword [ebp + 4 * 4 + 4 * 1] ; attr
 	push dword [esi] ; ch
 	call print_char_at
-	pop dword [0x505]
-	pop dword [0x505]
-	pop dword [0x505]
-	pop dword [0x505]
+	add esp, 4 * 4
 
 	inc esi
 	inc ebx
@@ -119,39 +114,35 @@ get_offset_row:
 
 	mov ebp, esp
 
-	mov eax, [ebp + 8 + 0]
-
+	mov eax, [ebp + 2 * 4 + 0] ; offset
+	
 	mov ebp, 2 * MAX_COLS
-	div ebp
+	div ebp ; eax /= 2 * MAX_COLS
 
 	pop ebp
 ret
 
 ; int offset 
 
-; eax = (offset - (get_offset_row(offset)*2*MAX_COLS))/2
+; eax = (offset - (get_offset_row(offset) * 2 * MAX_COLS)) / 2
 
 get_offset_col:
 	push ebp
-	push ebx
 
 	mov ebp, esp
 
-	push dword [ebp + 12 + 0] ; offset
-	call get_offset_row
-	pop dword [0x505]
+	push dword [ebp + 2 * 4 + 0]
+	call get_offset_row ; eax = get_offset_row(offset)
+	
+	mov ebp, 2 * MAX_COLS
+	mul ebp ; eax = get_offset_row(offset) * 2 * MAX_COLS
+	
+	pop ebp
+	sub ebp, eax ; ebp = offset - eax
 
-	mov ebx, 2 * MAX_COLS
-	mul ebx ; eax = get_offset_row(offset)*2*MAX_COLS
+	mov eax, ebp ; eax = ebp
 
-	mov ebx, [ebp + 12 + 0]
+	shr eax, 1 ; eax /= 2
 
-	sub ebx, eax ; ebx = offset - eax
-
-	shr ebx, 1 ; ebx /= 2
-
-	mov eax, ebx
-
-	push ebx
 	pop ebp
 ret
