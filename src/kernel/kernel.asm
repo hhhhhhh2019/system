@@ -9,30 +9,29 @@ start:
 	mov ebx, 0
 
 loop:
-	cmp ebx, 160 * MAX_ROWS
+	cmp ebx, 320
 	je end
 
-	push dword ebx
+	push ebx
 	call get_offset_row
-	add esp, 1 * 4
+	add esp, 4
 
-	push dword eax
+	push eax
 
-	push dword ebx
+	push ebx
 	call get_offset_col
-	add esp, 1 * 4
+	add esp, 4
 
-	push dword eax
+	push eax
 
-	push dword 0x4a
-	push dword 'X'
+	push 0x0f
+	push 'X'
+
 	call print_char_at
-
 	add esp, 4 * 4 ; restore stack
 
-	add ebx, 2
-
-	jmp loop
+	mov ebx, eax
+jmp loop
 
 end:
 jmp $
