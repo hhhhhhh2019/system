@@ -170,3 +170,47 @@ get_offset_col:
 	pop ebx
 	pop ebp
 ret
+
+; int offset
+set_cursor_pos:
+	push ebp
+
+	mov ebp, esp
+
+	mov eax, [ebp + 2 * 4 + 0] ; offset
+	shr eax, 1 ; offset /= 2
+
+	and eax, 0x0000ffff
+
+	push eax
+
+
+	shr eax, 8
+
+	push 14
+	push REG_SCREEN_CTRL
+	call set_port_byte
+	add esp, 8
+
+	push eax
+	push REG_SCREEN_DATA
+	call set_port_byte
+	add esp, 8
+
+
+	pop eax
+
+	and eax, 0x000000ff
+
+	push 15
+	push REG_SCREEN_CTRL
+	call set_port_byte
+	add esp, 8
+
+	push eax
+	push REG_SCREEN_DATA
+	call set_port_byte
+	add esp, 8
+
+	pop ebp
+ret

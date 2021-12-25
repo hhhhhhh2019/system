@@ -13,6 +13,11 @@ start:
 	call print_at
 	add esp, 4 * 4
 
+	push dword 0
+	push dword 0
+	call set_cursor_pos
+	add esp, 8
+
 jmp $
 
 

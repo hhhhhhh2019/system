@@ -1,3 +1,6 @@
+%define REG_SCREEN_CTRL 0x3d4
+%define REG_SCREEN_DATA 0x3d5
+
 ; int port
 get_port_byte:
 	push ebp
@@ -59,7 +62,7 @@ set_port_word:
 	mov eax, 0
 
 	mov dx, [ebp + 3 * 4 + 0 * 4] ; port
-	mov al, [ebp + 3 * 4 + 1 * 4] ; port
+	mov ax, [ebp + 3 * 4 + 1 * 4] ; data
 
 	out dx, ax
 
