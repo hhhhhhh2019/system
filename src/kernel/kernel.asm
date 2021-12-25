@@ -6,10 +6,10 @@ jmp start
 %include "src/include/screen.asm"
 
 start:
-	push 10
-	push 12
-	push 0x0f
-	push msg
+	push 3 		; y
+	push 4 		; x
+	push 0x0f ; attr
+	push msg 	; str
 	call print_at
 	add esp, 4 * 4
 

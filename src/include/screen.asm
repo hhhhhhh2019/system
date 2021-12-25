@@ -1,3 +1,5 @@
+%include "src/include/port.asm"
+
 %define VIDEO_ADDERS 0xb8000
 %define MAX_ROWS 25
 %define MAX_COLS 80
@@ -15,9 +17,8 @@ print_char_at:
 
 	push dword [ebp + 3 * 4 + 3 * 4] ; row
 	push dword [ebp + 3 * 4 + 2 * 4] ; col
-	call get_offset
+	call get_offset ; eax = offset
 	add esp, 4 * 2
-	; eax = offset
 
 	cmp bl, 0x0a ; \n
 	je print_char_at_1
@@ -33,15 +34,10 @@ print_char_at_1:
 	jmp print_char_at_end
 
 print_char_at_2:
-	push eax
-	call get_offset_row
-	add esp, 4
-	; eax = get_offset_row(offset)
+ 	mov eax, [ebp + 3 * 4 + 3 * 4] ; row
 
-	push ebx
 	mov ebx, MAX_COLS * 2
-	mul ebx ; eax *= MAX_COLS * 2
-	pop ebx
+	mul ebx
 
 	jmp print_char_at_end
 
