@@ -6,22 +6,35 @@ jmp start
 %include "src/include/screen.asm"
 
 start:
-	push dword 24 ; row
-	push 79 ; col
+	mov ebx, 0
+
+loop:
+	cmp ebx, 160 * MAX_ROWS
+	je end
+
+	push dword ebx
+	call get_offset_row
+	add esp, 1 * 4
+
+	push dword eax
+
+	push dword ebx
+	call get_offset_col
+	add esp, 1 * 4
+
+	push dword eax
+
 	push dword 0x4a
 	push dword 'X'
 	call print_char_at
 
 	add esp, 4 * 4 ; restore stack
 
-	push dword 0 ; row
-	push dword 0 ; col
-	push dword 0x0f ; attr
-	push dword msg ; str
-	call print_at
+	add ebx, 2
 
-	add esp, 4 * 4 ; restore stack
+	jmp loop
 
+end:
 jmp $
 
 
