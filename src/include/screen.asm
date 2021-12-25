@@ -10,8 +10,8 @@ print_char_at:
 
 	mov ebp, esp
 
-	mov bh, [ebp + 3 * 4 + 1 * 4] ; attr
 	mov bl, [ebp + 3 * 4 + 0 * 4] ; ch
+	mov bh, [ebp + 3 * 4 + 1 * 4] ; attr
 
 	push dword [ebp + 3 * 4 + 3 * 4] ; row
 	push dword [ebp + 3 * 4 + 2 * 4] ; col
@@ -19,14 +19,91 @@ print_char_at:
 	add esp, 4 * 2
 	; eax = offset
 
+	cmp bl, 0x0a ; \n
+	je print_char_at_1
 
+	cmp bl, 0x0d ; \r
+	je print_char_at_2
+
+	jmp print_char_at_3
+
+print_char_at_1:
+	add eax, MAX_COLS * 2
+
+	jmp print_char_at_end
+
+print_char_at_2:
+	push eax
+	call get_offset_row
+	add esp, 4
+	; eax = get_offset_row(offset)
+
+	push ebx
+	mov ebx, MAX_COLS * 2
+	mul ebx ; eax *= MAX_COLS * 2
+	pop ebx
+
+	jmp print_char_at_end
+
+print_char_at_3:
 	mov ebp, VIDEO_ADDERS
 	add ebp, eax
 	mov [ebp], bx
 
 	add eax, 2
 
+print_char_at_end:
 	pop ebx
+	pop ebp
+ret
+
+
+; char* str, char attr, int col, int row
+print_at:
+	push ebp
+	push esi
+	push ebx
+
+	mov ebp, esp
+
+	mov esi, [ebp + 4 * 4 + 0 * 4] ; *str
+
+	push dword [ebp + 4 * 4 + 3 * 4] ; row
+	push dword [ebp + 4 * 4 + 2 * 4] ; col
+	call get_offset
+	add esp, 4 * 2
+
+	mov ebx, eax
+
+print_at_loop:
+	cmp byte [esi], 0
+	je print_at_end
+
+	push ebx
+	call get_offset_row
+	add esp, 4
+
+	push eax
+
+	push ebx
+	call get_offset_col
+	add esp, 4
+
+	push eax
+
+	push dword [ebp + 4 * 4 + 1 * 4] ; attr
+	push dword [esi] ; ch
+	call print_char_at
+	add esp, 4 * 4
+
+	mov ebx, eax
+	inc esi
+
+jmp print_at_loop
+
+print_at_end:
+	pop ebx
+	pop esi
 	pop ebp
 ret
 
