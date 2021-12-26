@@ -104,6 +104,57 @@ print_at_end:
 ret
 
 
+print:
+	push ebp
+	push esi
+	push ebx
+
+	mov ebp, esp
+
+	mov esi, [ebp + 4 * 4 + 0 * 4] ; *str
+
+	call get_cursor_pos
+
+	mov ebx, eax
+
+print_loop:
+	cmp byte [esi], 0
+	je print_end
+
+	push ebx
+	call get_offset_row
+	add esp, 4
+
+	push eax
+
+	push ebx
+	call get_offset_col
+	add esp, 4
+
+	push eax
+
+	push dword [ebp + 4 * 4 + 1 * 4] ; attr
+	push dword [esi] ; ch
+	call print_char_at
+	add esp, 4 * 4
+
+	mov ebx, eax
+
+	push ebx
+	call set_cursor_pos
+	add esp, 4
+
+	inc esi
+
+jmp print_loop
+
+print_end:
+	pop ebx
+	pop esi
+	pop ebp
+ret
+
+
 ; int col, int row
 ; return (row * MAX_COLS + col) * 2
 get_offset:
@@ -214,4 +265,43 @@ set_cursor_pos:
 
 	pop ebx
 	pop ebp
+ret
+
+
+get_cursor_pos:
+	push ebx
+
+	mov ebx, 0
+
+
+	push dword 15
+	push dword REG_SCREEN_CTRL
+	call set_port_byte
+	add esp, 8
+
+	push dword REG_SCREEN_DATA
+	call get_port_byte
+	add esp, 4
+
+	mov ebx, eax
+
+
+	push dword 14
+	push dword REG_SCREEN_CTRL
+	call set_port_byte
+	add esp, 8
+
+	push dword REG_SCREEN_DATA
+	call get_port_byte
+	add esp, 4
+
+	shl eax, 8
+	add ebx, eax
+
+	mov eax, ebx
+
+	shl eax, 1
+
+
+	pop ebx
 ret

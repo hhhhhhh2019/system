@@ -52,7 +52,7 @@ start:
 	mov dh, 0
 	mov ch, 0
 	mov cl, 5 ; sector + 1
-	mov al, 1 ; sectors count
+	mov al, 2 ; sectors count
 	int 13h
 
 	; enter to 32 bit mode
@@ -78,7 +78,7 @@ init_pm:
 	mov ebx, welcome
 	;call print
 	pop dword [null]
-	
+
 	jmp 500h
 
 
