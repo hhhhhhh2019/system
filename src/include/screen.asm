@@ -174,43 +174,44 @@ ret
 ; int offset
 set_cursor_pos:
 	push ebp
+	push ebx
 
 	mov ebp, esp
 
-	mov eax, [ebp + 2 * 4 + 0] ; offset
-	shr eax, 1 ; offset /= 2
+	mov ebx, [ebp + 4 * 3 + 0] ; offset
 
-	and eax, 0x0000ffff
+	shr ebx, 1 ; effset /= 2
 
-	push eax
+	push ebx
 
+	and ebx, 0xff
 
-	shr eax, 8
-
-	push 14
-	push REG_SCREEN_CTRL
+	push dword 15
+	push dword REG_SCREEN_CTRL
 	call set_port_byte
 	add esp, 8
 
-	push eax
-	push REG_SCREEN_DATA
+	push dword ebx
+	push dword REG_SCREEN_DATA
 	call set_port_byte
 	add esp, 8
 
+	pop ebx
 
-	pop eax
+	and ebx, 0xff00
 
-	and eax, 0x000000ff
+	shr ebx, 8
 
-	push 15
-	push REG_SCREEN_CTRL
+	push dword 14
+	push dword REG_SCREEN_CTRL
 	call set_port_byte
 	add esp, 8
 
-	push eax
-	push REG_SCREEN_DATA
+	push dword ebx
+	push dword REG_SCREEN_DATA
 	call set_port_byte
 	add esp, 8
 
+	pop ebx
 	pop ebp
 ret

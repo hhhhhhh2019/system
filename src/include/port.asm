@@ -26,45 +26,10 @@ set_port_byte:
 
 	mov eax, 0
 
-	mov dx, [ebp + 3 * 4 + 0 * 4] ; port
-	mov al, [ebp + 3 * 4 + 1 * 4] ; port
+	mov edx, [ebp + 3 * 4 + 0 * 4] ; port
+	mov eax, [ebp + 3 * 4 + 1 * 4] ; data
 
 	out dx, al
-
-	pop edx
-	pop ebp
-ret
-
-
-; int port
-get_port_word:
-	push ebp
-	push edx
-
-	mov ebp, esp
-
-	mov dx, [ebp + 3 * 4 + 0] ; port
-	mov eax, 0
-
-	in ax, dx
-
-	pop edx
-	pop ebp
-ret
-
-; int port, int data
-set_port_word:
-	push ebp
-	push edx
-
-	mov ebp, esp
-
-	mov eax, 0
-
-	mov dx, [ebp + 3 * 4 + 0 * 4] ; port
-	mov ax, [ebp + 3 * 4 + 1 * 4] ; data
-
-	out dx, ax
 
 	pop edx
 	pop ebp
