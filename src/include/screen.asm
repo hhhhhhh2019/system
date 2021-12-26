@@ -1,6 +1,7 @@
 %include "src/include/port.asm"
+%include "src/include/util.asm"
 
-%define VIDEO_ADDERS 0xb8000
+%define VIDEO_ADDRESS 0xb8000
 %define MAX_ROWS 25
 %define MAX_COLS 80
 
@@ -42,7 +43,7 @@ print_char_at_2:
 	jmp print_char_at_end
 
 print_char_at_3:
-	mov ebp, VIDEO_ADDERS
+	mov ebp, VIDEO_ADDRESS
 	add ebp, eax
 	mov [ebp], bx
 
@@ -152,6 +153,46 @@ print_end:
 	pop ebx
 	pop esi
 	pop ebp
+ret
+
+
+scroll_screen:
+	push ecx
+	push eax
+
+	mov ecx, 1
+
+scroll_screen_loop:
+	cmp ecx, MAX_ROWS
+	je scroll_screen_end
+	; memcpy(VIDEO_ADDRESS + ecx * MAX_COLS * 2, VIDEO_ADDRESS + (ecx - 1) * MAX_COLS * 2, MAX_COLS * 2)
+
+	push dword MAX_COLS * 2 ; count
+
+	; VIDEO_ADDRESS + (ecx - 1) * MAX_COLS * 2
+	mov eax, MAX_ROWS * 2
+	push ecx
+	dec ecx
+	mul ecx
+	pop ecx
+	add eax, VIDEO_ADDRESS
+	push dword eax ; to
+
+	; VIDEO_ADDRESS + ecx * MAX_COLS * 2
+	mov eax, MAX_COLS * 2
+	mul ecx
+	add eax, VIDEO_ADDRESS
+	push dword eax; from
+
+	call memcpy
+	add esp, 4 * 3
+
+	inc ecx
+jmp scroll_screen_loop
+
+scroll_screen_end:
+	pop eax
+	pop ecx
 ret
 
 
