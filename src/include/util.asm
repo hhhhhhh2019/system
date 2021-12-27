@@ -9,19 +9,19 @@ memcpy:
 
 	mov esi, [ebp + 5 * 4 + 4 * 0] ; from
 	push dword [ebp + 5 * 4 + 4 * 1] ; to
-	mov ecx, [ebp + 5 * 4 + 4 * 2] ; count
+	mov ecx, 0 ; count
 
 	pop ebp
 
 memcpy_loop:
-	cmp ecx, ~0
+	cmp ecx, [ebp + 5 * 4 + 4 * 2]
 	je memcpy_end
 
 	mov ebx, [esi + ecx]
 
 	mov [ebp + ecx], ebx
 
-	dec ecx
+	inc ecx
 jmp memcpy_loop
 
 memcpy_end:

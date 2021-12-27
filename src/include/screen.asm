@@ -163,7 +163,7 @@ scroll_screen:
 	mov ecx, 1
 
 scroll_screen_loop:
-	cmp ecx, MAX_ROWS
+	cmp ecx, MAX_ROWS - 1
 	je scroll_screen_end
 	; memcpy(VIDEO_ADDRESS + ecx * MAX_COLS * 2, VIDEO_ADDRESS + (ecx - 1) * MAX_COLS * 2, MAX_COLS * 2)
 

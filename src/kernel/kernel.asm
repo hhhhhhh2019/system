@@ -18,7 +18,7 @@ start:
 	call print_char_at
 	add esp, 4 * 4
 
-	;call scroll_screen
+	call scroll_screen
 
 jmp $
 
