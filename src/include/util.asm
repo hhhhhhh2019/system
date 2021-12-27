@@ -1,3 +1,6 @@
+%ifndef UTIL
+%define UTIL
+
 ; int from, int to, int count
 memcpy:
 	push ebp
@@ -30,3 +33,5 @@ memcpy_end:
 	pop ecx
 	pop ebp
 ret
+
+%endif

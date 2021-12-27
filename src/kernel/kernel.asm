@@ -3,23 +3,24 @@
 
 jmp start
 
-%include "src/include/screen.asm"
+%include "src/kernel/isr.asm"
 
 start:
+	call isr_install
+
+	push dword 4
+	push dword 8
+	call get_offset
+	add esp, 4 * 2
+
+	push eax
+	call set_cursor_pos
+	add esp, 4
+
 	push dword 0x0f ; attr
 	push dword msg 	; str
 	call print
 	add esp, 4 * 4
-
-	push dword 2
-	push dword 0
-	push dword 0x4a
-	push dword 'X'
-	call print_char_at
-	add esp, 4 * 4
-
-	call scroll_screen
-
 jmp $
 
 

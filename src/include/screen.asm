@@ -1,3 +1,6 @@
+%ifndef SCREEN
+%define SCREEN
+
 %include "src/include/port.asm"
 %include "src/include/util.asm"
 
@@ -346,3 +349,5 @@ get_cursor_pos:
 
 	pop ebx
 ret
+
+%endif
