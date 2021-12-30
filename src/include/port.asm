@@ -1,3 +1,6 @@
+%ifndef PORT
+%define PORT
+
 %define REG_SCREEN_CTRL 0x3d4
 %define REG_SCREEN_DATA 0x3d5
 
@@ -34,3 +37,5 @@ set_port_byte:
 	pop edx
 	pop ebp
 ret
+
+%endif
