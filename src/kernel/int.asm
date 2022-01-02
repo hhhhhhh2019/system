@@ -4,6 +4,9 @@
 %include "src/include/screen.asm"
 
 
+timer: dw 0
+
+
 isr_handler:
 
 ret
@@ -320,9 +323,11 @@ iret
 ; timer
 irq0:
 	cli
-	push dword 0
-	;call irq_common_stub
-	add esp, 4
+
+	inc dword [timer]
+	mov byte [key_update], 0
+
+	sti
 iret
 
 ; keyboard
