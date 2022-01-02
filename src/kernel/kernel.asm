@@ -4,16 +4,12 @@
 jmp start
 
 %include "src/include/screen.asm"
-%include "src/kernel/int.asm"
+%include "src/kernel/isr.asm"
 %include "src/include/keyboard.asm"
 
 start:
-	call init_keyboard
+	call init_idt
+	call keyboard_init
 
-	call set_idt
-
-	int 0h
+	sti
 jmp $
-
-
-msg: db "Hello", 0

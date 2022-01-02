@@ -38,7 +38,7 @@ print_char_at_1:
 	jmp print_char_at_end
 
 print_char_at_2:
- 	mov eax, [ebp + 3 * 4 + 3 * 4] ; row
+	mov eax, [ebp + 3 * 4 + 3 * 4] ; row
 
 	mov ebx, MAX_COLS * 2
 	mul ebx
