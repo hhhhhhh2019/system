@@ -4,7 +4,7 @@
 %include "src/include/screen.asm"
 
 
-timer: dw 0
+timer: dd 0
 
 
 isr_handler:
@@ -17,19 +17,6 @@ ret
 
 
 isr_common_stub:
-	call get_cursor_pos
-
-	push ebp
-	mov ebp, VIDEO_ADDRESS
-	mov byte [ebp + eax], 'I'
-	mov byte [ebp + eax + 1], 0x0f
-	pop ebp
-
-	add eax, 2
-
-	push eax
-	call set_cursor_pos
-	add esp, 4
 	sti
 ret
 
@@ -43,21 +30,6 @@ irq_common_stub:
 	push dword 0x20
 	call set_port_byte
 	add esp, 4 * 2
-
-
-	call get_cursor_pos
-
-	push ebp
-	mov ebp, VIDEO_ADDRESS
-	mov byte [ebp + eax], 'Q'
-	mov byte [ebp + eax + 1], 0x0f
-	pop ebp
-
-	add eax, 2
-
-	push eax
-	call set_cursor_pos
-	add esp, 4
 
 	sti
 ret
@@ -325,9 +297,12 @@ irq0:
 	cli
 
 	inc dword [timer]
-	mov byte [key_update], 0
-
-	sti
+	
+	push dword 0
+	call irq_common_stub
+	add esp, 4
+	
+	;sti
 iret
 
 ; keyboard

@@ -108,6 +108,7 @@ print_at_end:
 ret
 
 
+; char* str, char attr
 print:
 	push ebp
 	push esi

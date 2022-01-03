@@ -52,7 +52,7 @@ start:
 	mov dh, 0
 	mov ch, 0
 	mov cl, 5 ; sector + 1
-	mov al, 10 ; sectors count
+	mov al, 20 ; sectors count
 	int 13h
 
 	; enter to 32 bit mode

@@ -59,8 +59,8 @@
 
 %define CHAR_- 0x0c
 %define CHAR_= 0x0d
-%define CHAR_[ 0x1b
-%define CHAR_] 0x1c
+%define CHAR_[ 0x1a
+%define CHAR_] 0x1b
 %define CHAR_: 0x27
 %define CHAR_' 0x28
 %define CHAR_` 0x29
@@ -100,19 +100,63 @@
 %define SCROLLLOCK 0x46
 
 
-last_key: db 0
-last_key_down: db 0
-last_key_up: db 0
-last_state: db 0 ; up / down
-key_update: db 0 ; false / true
+keys_state: times 0x58 + 1 db 0
+keys_handlers: times 256 dd 0
+keys_handlers_count: dd 0
+
+
+; func* handler
+; return id, if id == 0 -> error
+add_key_handler:
+	push ebp
+	push ecx
+	
+	mov ebp, esp
+	
+	cmp dword [keys_handlers_count], 256
+	je add_key_handler_bad
+	
+	mov ecx, 0
+	
+add_key_handler_loop:
+	cmp byte [keys_handlers + ecx], 0
+	je add_key_handler_ok
+	
+	add ecx, 4
+jmp add_key_handler_loop
+
+add_key_handler_ok:
+	mov dword eax, [ebp + 4 * 3 + 0] ; handler
+	mov dword [keys_handlers + ecx], eax
+	
+	push edx
+	mov eax, ecx
+	add eax, 4
+	mov edx, 0
+	mov ecx, 4
+	div ecx
+	pop edx
+	
+	inc dword [keys_handlers_count]
+jmp add_key_handler_end
+
+add_key_handler_bad:
+	mov eax, 0
+	
+add_key_handler_end:
+	pop ecx
+	pop ebp
+ret
 
 
 keyboard_int:
+	push ecx
+
 	push dword 0x64
 	call get_port_byte
 	add esp, 4
 	and eax, 0x01
-
+	
 	cmp eax, 1
 	je keyboard_int_continue
 
@@ -120,31 +164,22 @@ keyboard_int:
 
 
 keyboard_int_continue:
-	push ecx
-
 	push dword 0x60
 	call get_port_byte
 	add esp, 4
-
-	mov byte [last_key], al
-	mov byte [key_update], 1
-
-	cmp eax, 0x80
-	jl keyboard_int_keydown
-
-	jmp keyboard_int_keyup
-
-
-keyboard_int_keydown:
-	mov byte [last_state], 1 ; down
-	mov byte [last_key_down], al
-
-jmp keyboard_int_end
-
-
-keyboard_int_keyup:
-	mov byte [last_state], 2 ; up
-	mov byte [last_key_up], al
+	
+	mov ecx, 0
+	
+keyboard_int_loop:
+	cmp ecx, [keys_handlers_count]
+	je keyboard_int_end
+	
+	push eax
+	call [keys_handlers]
+	add esp, 4
+	
+	inc ecx
+jmp keyboard_int_loop
 
 keyboard_int_end:
 	push dword 0xA0
@@ -167,9 +202,9 @@ keyboard_init:
 	call set_idt_gate
 	add esp, 4 * 2
 
-	push dword 0xfd
+	push dword 0x0
 	push dword PIC1 + 1
-	call set_port_byte
+	;call set_port_byte
 	add esp, 4 * 2
 ret
 
