@@ -60,6 +60,8 @@ ret
 
 ; char* str, char attr, int col, int row
 print_at:
+	cli ; очередные костыли
+	
 	push ebp
 	push esi
 	push ebx
@@ -105,11 +107,15 @@ print_at_end:
 	pop ebx
 	pop esi
 	pop ebp
+	
+	sti
 ret
 
 
 ; char* str, char attr
 print:
+	cli 
+	
 	push ebp
 	push esi
 	push ebx
@@ -157,6 +163,8 @@ print_end:
 	pop ebx
 	pop esi
 	pop ebp
+	
+	sti
 ret
 
 

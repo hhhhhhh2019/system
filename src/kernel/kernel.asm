@@ -7,6 +7,7 @@ jmp start
 %include "src/kernel/isr.asm"
 %include "src/include/keyboard.asm"
 %include "src/include/timer.asm"
+%include "src/include/disk.asm"
 
 keymap:
 db 0,0,'1234567890-=',0,0,'qwertyuiop[]',0,0,'asdfghjkl;',"'",'``',0,'\zxcvbnm,./',0,0,0,' ',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -16,7 +17,6 @@ str: db 0,0
 ; int key
 key_handler:
 	mov eax, [esp + 4]
-	
 	
 	; вам нравятся костыли?
 	cmp eax, 0x80
@@ -52,4 +52,17 @@ start:
 	add esp, 4
 	
 	sti
+	
+	push dword msg
+	push dword 1
+	push dword 1
+	call read_sector
+	add esp, 4 * 2
+	
+	push dword 0x0f
+	push dword msg
+	call print
+	add esp, 4 * 2
 jmp $
+
+msg: times 512 db '0'
