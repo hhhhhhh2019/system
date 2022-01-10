@@ -4,6 +4,8 @@
 
 jmp start
 
+boot_disk: dw 0
+
 
 gdt_start:
 	dd 0x0 ; 4 byte
@@ -37,6 +39,8 @@ DATA_SEG equ gdt_data - gdt_start
 
 
 start:
+  mov byte [boot_disk], dl
+
 	mov bp, 0x9000
 	mov sp, bp
 
@@ -75,42 +79,8 @@ init_pm:
 	mov ebp, 0x90000
 	mov esp, ebp
 
-	mov ebx, welcome
-	;call print
-	pop dword [null]
-
+  push dword [boot_disk]
 	jmp 500h
-
-
-print:
-	push edx
-	push ebx
-	push ax
-
-
-	mov edx, 0xb8000
-
-print_loop:
-	mov al, [ebx]
-	cmp al, 0
-	je print_end
-
-	mov ah, 0x0f
-	mov [edx], ax
-	add edx, 2
-	inc ebx
-
-	jmp print_loop
-
-print_end:
-	pop ax
-	pop ebx
-	pop edx
-ret
-
-
-welcome: db "Welcome.", 0
-null: dd 0
 
 times 512-($-$$)-2 db 0
 
