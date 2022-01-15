@@ -30,7 +30,7 @@ print_char_at:
 	cmp bl, 0x0d ; \r
 	je print_char_at_2
 
-	jmp print_char_at_3
+	jmp print_char_at_3 ; EOL
 
 print_char_at_1:
 	add eax, MAX_COLS * 2
@@ -61,7 +61,7 @@ ret
 ; char* str, char attr, int col, int row
 print_at:
 	cli ; очередные костыли
-	
+
 	push ebp
 	push esi
 	push ebx
@@ -107,15 +107,15 @@ print_at_end:
 	pop ebx
 	pop esi
 	pop ebp
-	
+
 	sti
 ret
 
 
 ; char* str, char attr
 print:
-	cli 
-	
+	cli ; очередные костыли
+
 	push ebp
 	push esi
 	push ebx
@@ -124,9 +124,7 @@ print:
 
 	mov esi, [ebp + 4 * 4 + 0 * 4] ; *str
 
-	call get_cursor_pos
-
-	mov ebx, eax
+	mov ebx, 2
 
 print_loop:
 	cmp byte [esi], 0
@@ -150,11 +148,6 @@ print_loop:
 	add esp, 4 * 4
 
 	mov ebx, eax
-
-	push ebx
-	call set_cursor_pos
-	add esp, 4
-
 	inc esi
 
 jmp print_loop
@@ -163,7 +156,7 @@ print_end:
 	pop ebx
 	pop esi
 	pop ebp
-	
+
 	sti
 ret
 

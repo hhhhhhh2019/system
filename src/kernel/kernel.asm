@@ -17,14 +17,16 @@ start:
 
 	push dword msg
 	push dword 1
-	push dword 0
+	push dword 2
 	call read_sector
-	add esp, 4
+	add esp, 4 * 3
 
+	push dword 0
+	push dword 0
 	push dword 0x0f
 	push dword msg
-	call print
-	add esp, 4 * 2
+	call print_at
+	add esp, 4 * 4
 jmp $
 
 boot_disk: dw 0

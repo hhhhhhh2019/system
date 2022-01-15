@@ -17,27 +17,41 @@ read_sector:
 	push ebp
 	push ecx
 
-	push dword 0
+	mov ebp, esp
+
+	push dword [ebp + 4 * 3 + 4 * 1]
 	push dword ATA_BASE + 2 ; sector count
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword 0
+	mov eax, [ebp + 4 * 3 + 4 * 0]
+	and eax, 0xff
+	push dword eax
 	push dword ATA_BASE + 3 ; sector
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword 0
+	mov eax, [ebp + 4 * 3 + 4 * 0]
+	shr eax, 8
+	and eax, 0xff
+	push dword eax
 	push dword ATA_BASE + 4 ; cylinder low
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword 0
+	mov eax, [ebp + 4 * 3 + 4 * 0]
+	shr eax, 16
+	and eax, 0xff
+	push dword eax
 	push dword ATA_BASE + 5 ; cylinder high
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword 0xa0
+	mov eax, [ebp + 4 * 3 + 4 * 0]
+	shr eax, 24
+	and eax, 0xff
+	or eax, 0xa0
+	push dword eax
 	push dword ATA_BASE + 6 ; head & drive
 	call set_port_byte
 	add esp, 4 * 2
@@ -57,11 +71,21 @@ read_sector:
 	jz .loop
 ;jmp .loop
 
-	mov ecx, 256
-	mov edx, 0x1f0
-	mov edi, [esp + 4 * 3 + 4 * 2]
+	mov ebp, [ebp + 4 * 3 + 4 * 2]
+	mov ecx, 512
 
-	rep insw
+.loop2
+	mov dx, ATA_BASE
+	in ax, dx
+
+	mov byte [ebp], al
+	mov byte [ebp + 1], ah
+
+	dec ecx
+ add ebp, 2
+
+	cmp ecx, 0
+	jne .loop2
 
 
 	pop ecx
