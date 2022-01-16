@@ -1,4 +1,5 @@
 import sys
+from termios import N_TTY
 from zlib import crc32
 from uuid import uuid4
 
@@ -261,30 +262,39 @@ if ask == "y" or ask == "д":
 
 		sname = input("Имя раздела(максимум 72 символа): ")
 
+		stype = -1
 		fstype = -1
 
-		print("Типы файловых систем:\n\t0 - нет файловой системы\n\t1 - моя файловая система")
+		print("Типы разделов:\n\t0 - пустой раздел\n\t1 - раздел загрузки\n\t2 - раздел с файловой системой")
 
 		while True:
-			ask = int_input("Тип файловай системы: ")
+			ask = int_input("Тип раздела: ")
 
-			if ask > 1:
-				print("Неправильной тип файловой системы!")
+			if ask > 2:
+				print("Неправильной тип раздела!")
 				continue
 			
-			match ask:
-				case 0:
-					fstype = 0
-					break
-				case 1:
-					fstype = my_guid
+			stype = ask + my_guid
 			break
 
-		fsguid = fstype
+		if stype == my_guid + 2:
+			print("Типы файловой системы:\n\t0 - моя файловая системв")
+
+			while True:
+				ask = int_input("Тип файловой системы: ")
+
+				if ask > 0:
+					print("Неправильной тип файловой системы!")
+					continue
+				
+				fstype = ask
+				break
+
+		tguid = stype
 		sguid = int(uuid4())
 
 		for i in range(16):
-			data[1024 + sections_count * 128 + i] = fsguid >> (i * 8) & 0xff
+			data[1024 + sections_count * 128 + i] = tguid >> (i * 8) & 0xff
 		
 		for i in range(16):
 			data[1024 + sections_count * 128 + 16 + i] = sguid >> (i * 8) & 0xff
