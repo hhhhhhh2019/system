@@ -1,17 +1,24 @@
-from os.path import getsize
 import sys
 from zlib import crc32
 from uuid import uuid4
 
+H = 16
+S = 63
+
+def lba(s,c,h):
+	return (c * H + h) * S + s
+
+def sch(nlba):
+	c = nlba // (H * S)
+	h = (nlba // S) % H
+	s = (nlba % S) + 1
+
+	return (s,c,h)
 
 def num2lba(num):
-	num = int(num / 512)
-
-	sector = num & 0xff
-	cylinder = (num >> 8) & 0xffff
-	head = (num >> 24) & 0x0f
-
-	return (cylinder * 16 + head) * 65536 + sector
+	#s,c,h = sch(num)
+	#return s | (c >> 8) | (h >> 24)
+	return num // 512
 
 def size_input(ask):
 	ok = False
@@ -104,29 +111,30 @@ data = list(file.read())
 
 file.close()
 
-disk_size = getsize(file_name)
+disk_size = len(data)
 
 print("Размер диска: " + num2size(disk_size))
 
+end_lba = disk_size // 512 - 1
 
 print("\n\nНастройка gpt")
 
 data[0x1be + 0] = 0
 data[0x1be + 1] = 0 # head
-data[0x1be + 2] = 0 # cylinder
-data[0x1be + 3] = 2 # sector
+data[0x1be + 2] = 2 # cylinder
+data[0x1be + 3] = 0 # sector
 data[0x1be + 4] = 0xee # type
 data[0x1be + 5] = 0xff # head
 data[0x1be + 6] = 0xff # cylinder
 data[0x1be + 7] = 0xff # sector
-data[0x1be + 8] = 0
+data[0x1be + 8] = 1
 data[0x1be + 9] = 0
 data[0x1be + 10] = 0
-data[0x1be + 11] = 1
-data[0x1be + 12] = 0xff
-data[0x1be + 13] = 0x3f
-data[0x1be + 14] = 0x00
-data[0x1be + 15] = 0x00
+data[0x1be + 11] = 0
+data[0x1be + 12] = end_lba & 0xff
+data[0x1be + 13] = end_lba >> 8 & 0xff
+data[0x1be + 14] = end_lba >> 16 & 0xff
+data[0x1be + 15] = end_lba >> 32 & 0xff
 
 data[510] = 0x55
 data[511] = 0xaa
@@ -150,7 +158,7 @@ data[512 + 16 + 1] = 0 # hash
 data[512 + 16 + 2] = 0 # hash
 data[512 + 16 + 3] = 0 # hash
 
-lba_gpt_header = num2lba(512)
+lba_gpt_header = 1
 data[512 + 24 + 0] = lba_gpt_header & 0xff
 data[512 + 24 + 1] = lba_gpt_header >> 8 & 0xff
 data[512 + 24 + 2] = lba_gpt_header >> 16 & 0xff
@@ -160,11 +168,11 @@ data[512 + 24 + 5] = 0
 data[512 + 24 + 6] = 0
 data[512 + 24 + 7] = 0
 
-lba_copy_gpt_header = num2lba(disk_size - 512)
+lba_copy_gpt_header = end_lba
 data[512 + 32 + 0] = lba_copy_gpt_header & 0xff
 data[512 + 32 + 1] = lba_copy_gpt_header >> 8 & 0xff
 data[512 + 32 + 2] = lba_copy_gpt_header >> 16 & 0xff
-data[512 + 32 + 3] = lba_copy_gpt_header >> 24 & 0xff
+data[512 + 32 + 3] = 0#lba_copy_gpt_header >> 24 & 0xff
 data[512 + 32 + 4] = 0
 data[512 + 32 + 5] = 0
 data[512 + 32 + 6] = 0
@@ -195,7 +203,7 @@ guid = int(uuid4())
 for i in range(16):
 	data[512 + 56 + i] = guid >> (i * 8) & 0xff
 
-lba_table_start = num2lba(1024)
+lba_table_start = 2
 data[512 + 72 + 0] = lba_table_start & 0xff
 data[512 + 72 + 1] = lba_table_start >> 8 & 0xff
 data[512 + 72 + 2] = lba_table_start >> 16 & 0xff
@@ -225,9 +233,12 @@ print("\nНастройка разделов\n")
 
 ask = input("Создать разделы на диске? (д/н): ").lower()
 
+sections_count = 0
+
+my_guid = 0xec91e6b2782e415185799aaae1547431
+
 if ask == "y" or ask == "д":
-	sections_count = 0
-	next_free_sector = 512 * 34
+	next_free_sector = 512 * 35
 	create_new_section = True
 	free_space = disk_size - 512 - (512 + 0x80 * 128) * 2
 	print("\nМаксимальное кол-во разделов: 128\nСвободного места: " + num2size(free_space) + "\n")
@@ -252,7 +263,7 @@ if ask == "y" or ask == "д":
 
 		fstype = -1
 
-		print("Типы файловых систем:\n\t0 - нет файловой ститемы\n\t1 - моя файловая система")
+		print("Типы файловых систем:\n\t0 - нет файловой системы\n\t1 - моя файловая система")
 
 		while True:
 			ask = int_input("Тип файловай системы: ")
@@ -261,7 +272,12 @@ if ask == "y" or ask == "д":
 				print("Неправильной тип файловой системы!")
 				continue
 			
-			fstype = ask
+			match ask:
+				case 0:
+					fstype = 0
+					break
+				case 1:
+					fstype = my_guid
 			break
 
 		fsguid = fstype
@@ -302,6 +318,8 @@ if ask == "y" or ask == "д":
 		data[1024 + sections_count * 128 + 48 + 6] = 0
 		data[1024 + sections_count * 128 + 48 + 7] = 0
 
+		next_free_sector += size + 512
+
 		for i in range(min(len(sname), 72)):
 			data[1024 + sections_count * 128 + 56 + i] = ord(sname[i])
 
@@ -317,13 +335,13 @@ if ask == "y" or ask == "д":
 			break
 
 
-	data[512 + 80 + 0] = sections_count & 0xff
-	data[512 + 80 + 1] = sections_count >> 8 & 0xff
-	data[512 + 80 + 2] = sections_count >> 16 & 0xff
-	data[512 + 80 + 3] = sections_count >> 24 & 0xff
+data[512 + 80 + 0] = 128 & 0xff
+data[512 + 80 + 1] = 128 >> 8 & 0xff
+data[512 + 80 + 2] = 128 >> 16 & 0xff
+data[512 + 80 + 3] = 128 >> 24 & 0xff
 
 
-table_hash = int(crc32(bytearray(data[1024:1024 + 512*34])))
+table_hash = int(crc32(bytearray(data[1024:1024 + 128*128])))
 
 data[512 + 88 + 0] = table_hash & 0xff
 data[512 + 88 + 1] = table_hash >> 8 & 0xff
@@ -337,6 +355,14 @@ data[512 + 16 + 0] = gpt_hash & 0xff
 data[512 + 16 + 1] = gpt_hash >> 8 & 0xff
 data[512 + 16 + 2] = gpt_hash >> 16 & 0xff
 data[512 + 16 + 3] = gpt_hash >> 24 & 0xff
+
+
+for i in range(512):
+	data[disk_size - 512 + i] = data[512 + i]
+
+for i in range(12 * 34):
+	data[disk_size - 512 * 34 + i] = data[1024 + i]
+
 
 
 file = open(file_name, mode="bw")
