@@ -1,3 +1,6 @@
+%ifndef DISK
+%define DISK
+
 %define ATA_BASE 0x1f0
 
 %define SECTOR_SIZE   512
@@ -25,6 +28,7 @@ read_sector:
 	add esp, 4 * 2
 
 	mov eax, [ebp + 4 * 3 + 4 * 0]
+	inc eax
 	and eax, 0xff
 	push dword eax
 	push dword ATA_BASE + 3 ; sector
@@ -71,8 +75,12 @@ read_sector:
 	jz .loop
 ;jmp .loop
 
+	mov eax, [ebp + 4 * 3 + 4 * 1]
+	mov ecx, 256
+	mul ecx
+	mov ecx, eax
+
 	mov ebp, [ebp + 4 * 3 + 4 * 2]
-	mov ecx, 512
 
 .loop2
 	mov dx, ATA_BASE
@@ -82,7 +90,7 @@ read_sector:
 	mov byte [ebp + 1], ah
 
 	dec ecx
- add ebp, 2
+	add ebp, 2
 
 	cmp ecx, 0
 	jne .loop2
@@ -91,3 +99,5 @@ read_sector:
 	pop ecx
 	pop ebp
 ret
+
+%endif

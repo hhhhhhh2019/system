@@ -1,0 +1,31 @@
+name - size(byte)
+files/folders links starts in the next sector
+
+fs header:
+	fs type(0x5af615a7bfe90bd4) - 8
+	start lba - 8
+	end lba - 8
+
+	folders count - 1
+	files count - 1
+
+	files/folders link(lba) - 4096
+
+folder header:
+	type(1) - 1
+	parent lba(if folder - root, lba = 0) - 8
+	name length - 1
+	name - ?
+	folders count - 1
+	files count - 1
+
+	files/folders link(lba) - 4096
+
+file header:
+	type(2) - 1
+	parent lba - 8
+	name length - 1
+	name - ?
+	fragments count - 1
+
+	fragments link(lba + length(sectors)) - 2560

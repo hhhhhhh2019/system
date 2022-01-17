@@ -39,7 +39,7 @@ DATA_SEG equ gdt_data - gdt_start
 
 
 start:
-  mov byte [boot_disk], dl
+	mov byte [boot_disk], dl
 
 	mov bp, 0x9000
 	mov sp, bp

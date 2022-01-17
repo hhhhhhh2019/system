@@ -1,5 +1,4 @@
 import sys
-from termios import N_TTY
 from zlib import crc32
 from uuid import uuid4
 
@@ -94,6 +93,46 @@ def num2size(num):
 		return str(num / 1024 / 1024) + "МБ"
 	else:
 		return str(num / 1024 / 1024 / 1024) + "ГБ"
+
+
+def make_simple_fs(offset, msize):
+	size = 0
+
+	while True:
+		size = size_input("Размер ф.с.: ")
+		if size > msize:
+			ask = input("Размер раздела меньше чем размер ф.с., устроновить размер в " + num2size(msize) + "?(д/н): ").lower()
+
+			if ask == "y" or ask == "д":
+				size = msize
+				break
+		else:
+			break
+
+	for i in range(8):
+		data[offset + i] = (0x5af615a7bfe90bd4 >> i * 8) & 0xff
+	
+	data[offset + 8 + 2] = offset & 0xff
+	data[offset + 8 + 3] = offset >> 8 & 0xff
+	data[offset + 8 + 4] = offset >> 16 & 0xff
+	data[offset + 8 + 5] = offset >> 24 & 0xff
+	data[offset + 8 + 6] = 0
+	data[offset + 8 + 7] = 0
+	data[offset + 8 + 8] = 0
+	data[offset + 8 + 9] = 0
+	
+	data[offset + 8 + 10] = (offset + size) & 0xff
+	data[offset + 8 + 11] = (offset + size) >> 8 & 0xff
+	data[offset + 8 + 12] = (offset + size) >> 16 & 0xff
+	data[offset + 8 + 13] = (offset + size) >> 32 & 0xff
+	data[offset + 8 + 14] = 0
+	data[offset + 8 + 15] = 0
+	data[offset + 8 + 16] = 0
+	data[offset + 8 + 17] = 0
+	
+	for i in range(512 - 26):
+		data[offset + 8 + 18 + i] = 0
+
 
 
 file_name = ''
@@ -234,12 +273,15 @@ print("\nНастройка разделов\n")
 
 ask = input("Создать разделы на диске? (д/н): ").lower()
 
+for i in range(128 * 128):
+	data[1024 + i] = 0
+
 sections_count = 0
 
 my_guid = 0xec91e6b2782e415185799aaae1547431
 
 if ask == "y" or ask == "д":
-	next_free_sector = 512 * 35
+	next_free_sector = 35
 	create_new_section = True
 	free_space = disk_size - 512 - (512 + 0x80 * 128) * 2
 	print("\nМаксимальное кол-во разделов: 128\nСвободного места: " + num2size(free_space) + "\n")
@@ -289,6 +331,9 @@ if ask == "y" or ask == "д":
 				
 				fstype = ask
 				break
+		
+		if stype == my_guid + 2 and fstype == 0:
+			make_simple_fs(next_free_sector * 512, size)
 
 		tguid = stype
 		sguid = int(uuid4())
@@ -299,7 +344,7 @@ if ask == "y" or ask == "д":
 		for i in range(16):
 			data[1024 + sections_count * 128 + 16 + i] = sguid >> (i * 8) & 0xff
 		
-		start_lba = num2lba(next_free_sector)
+		start_lba = num2lba(next_free_sector * 512)
 		data[1024 + sections_count * 128 + 32 + 0] = start_lba & 0xff
 		data[1024 + sections_count * 128 + 32 + 1] = start_lba >> 8 & 0xff
 		data[1024 + sections_count * 128 + 32 + 2] = start_lba >> 16 & 0xff
@@ -309,7 +354,7 @@ if ask == "y" or ask == "д":
 		data[1024 + sections_count * 128 + 32 + 6] = 0
 		data[1024 + sections_count * 128 + 32 + 7] = 0
 
-		end_lba = num2lba(next_free_sector + size)
+		end_lba = num2lba(next_free_sector * 512 + size)
 		data[1024 + sections_count * 128 + 40 + 0] = end_lba & 0xff
 		data[1024 + sections_count * 128 + 40 + 1] = end_lba >> 8 & 0xff
 		data[1024 + sections_count * 128 + 40 + 2] = end_lba >> 16 & 0xff
@@ -328,7 +373,7 @@ if ask == "y" or ask == "д":
 		data[1024 + sections_count * 128 + 48 + 6] = 0
 		data[1024 + sections_count * 128 + 48 + 7] = 0
 
-		next_free_sector += size + 512
+		next_free_sector += size // 512 + 1
 
 		for i in range(min(len(sname), 72)):
 			data[1024 + sections_count * 128 + 56 + i] = ord(sname[i])
@@ -345,10 +390,10 @@ if ask == "y" or ask == "д":
 			break
 
 
-data[512 + 80 + 0] = 128 & 0xff
-data[512 + 80 + 1] = 128 >> 8 & 0xff
-data[512 + 80 + 2] = 128 >> 16 & 0xff
-data[512 + 80 + 3] = 128 >> 24 & 0xff
+data[512 + 80 + 0] = sections_count & 0xff
+data[512 + 80 + 1] = sections_count >> 8 & 0xff
+data[512 + 80 + 2] = sections_count >> 16 & 0xff
+data[512 + 80 + 3] = sections_count >> 24 & 0xff
 
 
 table_hash = int(crc32(bytearray(data[1024:1024 + 128*128])))
