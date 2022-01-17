@@ -1,6 +1,6 @@
-%ifndef fs
+%ifndef FS
 $define FS
 
-%include "src/include/fs/sfs/asm"
+%include "src/include/fs/sfs.asm"
 
 %endif

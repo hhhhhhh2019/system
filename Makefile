@@ -7,8 +7,8 @@ all: compile setup_fs
 compile: boot.bin start.bin kernel.bin
 	nasm src/disk.asm -o build/boot.img
 
-	dd if=build/boot.bin of=build/boot.img bs=512 conv=notrunc seek=0
-	dd if=build/start.bin of=build/boot.img bs=512 conv=notrunc seek=35
+	dd if=build/boot.bin of=build/boot.img bs=512 seek=0
+	dd if=build/start.bin of=build/boot.img bs=512 seek=34
 
 boot.bin: src/boot/boot.asm
 	nasm $< -o build/$@
@@ -20,4 +20,4 @@ kernel.bin: src/kernel/kernel.asm
 	nasm $< -o build/$@
 
 setup_fs:
-	python3.10 setup.py build/boot.img
+	python setup.py build/boot.img

@@ -57,7 +57,6 @@ print_char_at_end:
 	pop ebp
 ret
 
-
 ; char* str, char attr, int col, int row
 print_at:
 	push ebp

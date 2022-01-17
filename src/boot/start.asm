@@ -8,6 +8,7 @@ jmp start
 
 %include "src/include/screen.asm"
 %include "src/include/disk.asm"
+%include "src/include/fs.asm"
 
 start:
 	push dword gpt

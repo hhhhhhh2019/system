@@ -112,19 +112,19 @@ def make_simple_fs(offset, msize):
 	for i in range(8):
 		data[offset + i] = (0x5af615a7bfe90bd4 >> i * 8) & 0xff
 	
-	data[offset + 8 + 2] = offset & 0xff
-	data[offset + 8 + 3] = offset >> 8 & 0xff
-	data[offset + 8 + 4] = offset >> 16 & 0xff
-	data[offset + 8 + 5] = offset >> 24 & 0xff
+	data[offset + 8 + 2] = (offset / 512) & 0xff
+	data[offset + 8 + 3] = (offset / 512) >> 8 & 0xff
+	data[offset + 8 + 4] = (offset / 512) >> 16 & 0xff
+	data[offset + 8 + 5] = (offset / 512) >> 24 & 0xff
 	data[offset + 8 + 6] = 0
 	data[offset + 8 + 7] = 0
 	data[offset + 8 + 8] = 0
 	data[offset + 8 + 9] = 0
 	
-	data[offset + 8 + 10] = (offset + size) & 0xff
-	data[offset + 8 + 11] = (offset + size) >> 8 & 0xff
-	data[offset + 8 + 12] = (offset + size) >> 16 & 0xff
-	data[offset + 8 + 13] = (offset + size) >> 32 & 0xff
+	data[offset + 8 + 10] = (offset + size) // 512 & 0xff
+	data[offset + 8 + 11] = (offset + size) // 512 >> 8 & 0xff
+	data[offset + 8 + 12] = (offset + size) // 512 >> 16 & 0xff
+	data[offset + 8 + 13] = (offset + size) // 512 >> 32 & 0xff
 	data[offset + 8 + 14] = 0
 	data[offset + 8 + 15] = 0
 	data[offset + 8 + 16] = 0
@@ -132,6 +132,9 @@ def make_simple_fs(offset, msize):
 	
 	for i in range(512 - 26):
 		data[offset + 8 + 18 + i] = 0
+	
+	for i in range(512*4):
+		data[offset + 512 + i] = 0xff
 
 
 
@@ -281,7 +284,7 @@ sections_count = 0
 my_guid = 0xec91e6b2782e415185799aaae1547431
 
 if ask == "y" or ask == "д":
-	next_free_sector = 35
+	next_free_sector = 34
 	create_new_section = True
 	free_space = disk_size - 512 - (512 + 0x80 * 128) * 2
 	print("\nМаксимальное кол-во разделов: 128\nСвободного места: " + num2size(free_space) + "\n")
