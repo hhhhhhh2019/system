@@ -112,10 +112,10 @@ def make_simple_fs(offset, msize):
 	for i in range(8):
 		data[offset + i] = (0x5af615a7bfe90bd4 >> i * 8) & 0xff
 	
-	data[offset + 8 + 2] = (offset / 512) & 0xff
-	data[offset + 8 + 3] = (offset / 512) >> 8 & 0xff
-	data[offset + 8 + 4] = (offset / 512) >> 16 & 0xff
-	data[offset + 8 + 5] = (offset / 512) >> 24 & 0xff
+	data[offset + 8 + 2] = (offset // 512) & 0xff
+	data[offset + 8 + 3] = (offset // 512) >> 8 & 0xff
+	data[offset + 8 + 4] = (offset // 512) >> 16 & 0xff
+	data[offset + 8 + 5] = (offset // 512) >> 24 & 0xff
 	data[offset + 8 + 6] = 0
 	data[offset + 8 + 7] = 0
 	data[offset + 8 + 8] = 0
