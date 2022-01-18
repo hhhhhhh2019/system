@@ -55,7 +55,7 @@ start:
 	mov dl, 80h
 	mov dh, 0
 	mov ch, 0
-	mov cl, 36 ; sector + 1
+	mov cl, 35 ; sector + 1
 	mov al, 20 ; sectors count
 	int 13h
 

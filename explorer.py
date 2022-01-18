@@ -1,5 +1,6 @@
 import sys
-from re import split
+
+FULL_CLEAR = True
 
 fs_num = [0x5a,0xf6,0x15,0xa7,0xbf,0xe9,0x0b,0xd4]
 fs_num.reverse()
@@ -51,36 +52,33 @@ def get_folders(fst):
 		folders_count = data[fst+9+name_len+1]
 	
 
-	res = ""
+	res = []
 
 	for i in range(folders_count):
-		res += get_name(lba2addr(data[fst+512+i*8:fst+512+i*8+8])) + " "
+		res.append(get_name(lba2addr(data[fst+512+i*8:fst+512+i*8+8])))
 
 	return res
 
 
 def get_files(fst):
-	folders_count = 0
 	files_count = 0
 
 	if data[fst:fst+8] == fs_num:
-		folders_count = data[fst+24]
 		files_count = data[fst+25]
 
-	elif data[fst] != 2:
-		print(fst, "не является файлом!")
+	elif data[fst] != 1:
+		print(fst, "не является папкой!")
 		return
 	
 	else:
 		name_len = data[fst+9]
-		folders_count = data[fst+9+name_len+1]
 		files_count = data[fst+9+name_len+2]
 	
 
-	res = ""
+	res = []
 
 	for i in range(files_count):
-		res += get_name(lba2addr(data[fst+folders_count*8+512+i*8:fst+folders_count*8+512+i*8+8])) + " "
+		res.append(get_name(lba2addr(data[fst+2560+i*8:fst+2560+i*8+8])))
 
 	return res
 	
@@ -103,13 +101,13 @@ def make_folder(name, fst):
 		folders_count = data[fst+9+name_len+1]
 	
 
-	ffst = get_next_free_sector(fst+512*4,fs[current_fs_id][1]-512*4)
+	ffst = get_next_free_sector(fst+512*8,fs[current_fs_id][1]-512*8)
 
 	data[ffst] = 1
-	data[ffst + 1] = (fst * 512) & 0xff
-	data[ffst + 2] = (fst * 512) >> 8 & 0xff
-	data[ffst + 3] = (fst * 512) >> 16 & 0xff
-	data[ffst + 4] = (fst * 512) >> 24 & 0xff
+	data[ffst + 1] = (fst // 512) & 0xff
+	data[ffst + 2] = (fst // 512) >> 8 & 0xff
+	data[ffst + 3] = (fst // 512) >> 16 & 0xff
+	data[ffst + 4] = (fst // 512) >> 24 & 0xff
 	data[ffst + 5] = 0
 	data[ffst + 6] = 0
 	data[ffst + 7] = 0
@@ -120,12 +118,126 @@ def make_folder(name, fst):
 	for i in range(len(name)):
 		data[ffst + 10 + i] = ord(name[i])
 	
-	for i in range(512*4):
+	for i in range(512*8):
 		data[ffst+512+i]=0xff
 	
 	for i in range(8):
 		data[fst + 512 + folders_count * 8 - 8 + i] = (ffst // 512) >> (i * 8) & 0xff
 
+
+def remove_folder(name, fst):
+	flds = get_folders(fst)
+
+	if not name in flds:
+		print("Папка " + name + " не найдена!")
+		return
+	
+
+	fldlink_fst = fst+512+flds.index(name)*8
+	
+
+	fld_fst = lba2addr(data[fldlink_fst:fldlink_fst+8])
+
+	tmp = data[fldlink_fst+8:fldlink_fst+8+4096-(fldlink_fst-fst)]
+	
+	for i in range(len(tmp)):
+		data[fldlink_fst + i] = tmp[i]
+	
+	fst = fld_fst
+
+	while fst < fld_fst + 2560:
+		data[fst] = 0
+
+		if FULL_CLEAR:
+			fst += 1
+		else:
+			fst += 512
+
+
+def load_file(name, fst):
+	files_count = 0
+
+	if data[fst:fst+8] == fs_num:
+		data[fst+25] = data[fst+25] + 1
+		files_count = data[fst+25]
+	
+	elif data[fst] != 1:
+		print(fst, "не является папкой!")
+		return
+	
+	else:
+		name_len = data[fst+9]
+		data[fst+9+name_len+2] = data[fst+9+name_len+2] + 1
+		files_count = data[fst+9+name_len+2]
+
+	file = open(name, mode='br')
+	fdata = list(file.read())
+	file.close()
+
+	fname = name.split("/")[-1]
+
+	ffst = get_next_free_sector(fst+512*8,fs[current_fs_id][1]-512*5)
+
+	data[ffst] = 2
+	data[ffst + 1] = (fst // 512) & 0xff
+	data[ffst + 2] = (fst // 512) >> 8 & 0xff
+	data[ffst + 3] = (fst // 512) >> 16 & 0xff
+	data[ffst + 4] = (fst // 512) >> 24 & 0xff
+	data[ffst + 5] = 0
+	data[ffst + 6] = 0
+	data[ffst + 7] = 0
+	data[ffst + 8] = 0
+
+	data[ffst + 9] = len(fname)
+
+	for i in range(len(fname)):
+		data[ffst + 10 + i] = ord(fname[i])
+	
+	for i in range(512*5):
+		data[ffst+512+i]=0xff
+
+	for i in range(8):
+		data[fst + 2560 + files_count * 8 - 8 + i] = (ffst // 512) >> (i * 8) & 0xff
+	
+	ncount = len(fdata)
+
+	while True:
+		scount = 0
+		sfst = 0
+		sbfst = 0
+
+		for i in range(ncount // 512 + 1):
+			snfst = get_next_free_sector(fs[current_fs_id][0],fs[current_fs_id][1]-512)
+
+			if sbfst != 0 and snfst - sbfst > 512:
+				break
+				
+			data[snfst] = 0xff
+				
+			sbfst = snfst
+
+			if scount == 0:
+				sfst = snfst
+				scount += 1
+			else:
+				scount += 1
+		
+		tmp = 0
+		
+		for i in range(min(len(fdata), scount * 512)):
+			data[sfst + i] = fdata[i + len(fdata) - min(len(fdata), ncount)]
+			tmp += 1
+		
+		ncount -= tmp
+		
+		data[ffst + 10 + len(fname)] = data[ffst + 10 + len(fname)] + 1
+
+		for i in range(8):
+			data[ffst + 512 + data[ffst + 10 + len(fname)] * 9 - 9 + i] = (sfst // 512) >> (i * 8) & 0xff
+		data[ffst + 512 + data[ffst + 10 + len(fname)] * 9 - 9 + 8] = scount
+		
+		if ncount == 0:
+			break
 
 
 my_guid = 0xec91e6b2782e415185799aaae1547431
@@ -176,13 +288,18 @@ print("Кол-во файловых систем: " + str(len(fs)))
 current_fs_id = 0
 current_offset = fs[0][0]
 
+current_path = "/"
+
 while True:
-	inp = input("$ ")
+	inp = input(current_path + "$ ")
 	cmd = []
 
 	for i in inp.split(" "):
 		if i != "":
 			cmd.append(i)
+		
+	if len(cmd) == 0:
+		continue
 	
 	if cmd[0] == "exit":
 		break
@@ -192,11 +309,11 @@ while True:
 sets - выбрать файловую систему\n\
 ls - вывод файлов/папок в папке\n\
 cd - перейти в другую директорию\n\
-load - загрузка файла в папку\n\
 mkdir - создание папки\n\
+rmd - удаление папки\n\
+load - загрузка файла в папку\n\
 read - чтение файла\n\
-rm - удаление файла\n\
-rmf - удаление папки')
+rm - удаление файла')
 
 	elif cmd[0] == "sets":
 		if len(cmd) == 1:
@@ -212,7 +329,7 @@ rmf - удаление папки')
 	
 	elif cmd[0] == "ls":
 		if len(cmd) == 1:
-			print(get_folders(current_offset) + get_files(current_offset))
+			print(get_folders(current_offset), get_files(current_offset))
 	
 	elif cmd[0] == "mkdir":
 		if len(cmd) == 1:
@@ -220,7 +337,62 @@ rmf - удаление папки')
 
 		else:
 			for i in cmd[1:]:
-				make_folder(i, current_offset)		
+				make_folder(i, current_offset)
+		
+	elif cmd[0] == "rmd":
+		if len(cmd) == 1:
+			print("Использование: rmd <имена папок>")
+
+		else:
+			for i in cmd[1:]:
+				remove_folder(i, current_offset)
+	
+	elif cmd[0] == "cd":
+		if len(cmd) == 1:
+			current_offset = fs[current_fs_id][0]
+			current_path = "/"
+		
+		elif len(cmd) == 2:
+			fst = current_offset
+
+			if cmd[1] == "..":
+				if data[fst:fst+8] == fs_num:
+					print("Папка в которой вы находитесь является корневой папкой!")
+					continue
+				
+				fld_fst = lba2addr(data[fst+1:fst+9])
+				
+				current_offset = fld_fst
+
+				split_path = current_path.split("/")
+
+				current_path = "/"
+
+				for i in split_path[:-2]:
+					if i != "":
+						current_path += i + "/"
+			else:
+				name = cmd[1]
+
+				flds = get_folders(fst)
+
+				if not name in flds:
+					print("Папка " + name + " не найдена!")
+					continue
+				
+				fldlink_fst = fst+512+flds.index(name)*8
+
+				fld_fst = lba2addr(data[fldlink_fst:fldlink_fst+8])
+
+				current_path += name + "/"
+				current_offset = fld_fst
+	
+	elif cmd[0] == "load":
+		if len(cmd) != 2:
+			print("Использование: load <имя файла>")
+			continue
+			
+		load_file(cmd[1], current_offset)
 
 
 file = open(file_name, mode="bw")

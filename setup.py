@@ -133,7 +133,7 @@ def make_simple_fs(offset, msize):
 	for i in range(512 - 26):
 		data[offset + 8 + 18 + i] = 0
 	
-	for i in range(512*4):
+	for i in range(512*8):
 		data[offset + 512 + i] = 0xff
 
 
