@@ -133,19 +133,27 @@ def remove_folder(name, fst):
 		return
 	
 
+	if data[fst:fst+8] == fs_num:
+		data[fst+24] = data[fst+24] - 1
+	
+	else:
+		name_len = data[fst+9]
+		data[fst+9+name_len+1] = data[fst+9+name_len+1] - 1
+	
+
 	fldlink_fst = fst+512+flds.index(name)*8
 	
 
 	fld_fst = lba2addr(data[fldlink_fst:fldlink_fst+8])
 
-	tmp = data[fldlink_fst+8:fldlink_fst+8+4096-(fldlink_fst-fst)]
+	tmp = data[fldlink_fst+8:fldlink_fst+8+2048-(fldlink_fst-fst)]
 	
 	for i in range(len(tmp)):
 		data[fldlink_fst + i] = tmp[i]
 	
 	fst = fld_fst
 
-	while fst < fld_fst + 2560:
+	while fst < fld_fst + 4096+512:
 		data[fst] = 0
 
 		if FULL_CLEAR:
@@ -238,6 +246,81 @@ def load_file(name, fst):
 		
 		if ncount == 0:
 			break
+
+
+def read_file(name, fst):
+	fls = get_files(fst)
+
+	if not name in fls:
+		print("Файл " + name + " не найден!")
+		return
+	
+	fllink_fst = fst+2560+fls.index(name)*8
+
+	ffst = lba2addr(data[fllink_fst:fllink_fst+8])
+
+	segments = []
+
+	for i in range(int(data[ffst + 1 + 8 + len(name) + 1])):
+		segments.append([lba2addr(data[ffst + 512 + i * 9:ffst + 512 + i * 9 + 8]), data[ffst + 512 + i * 9 + 8]])
+
+	res = ""
+
+	for i in segments:
+		for j in range(512 * i[1]):
+			res += chr(data[i[0] + j])
+
+	return res
+
+
+def remove_file(name, fst):
+	fls = get_files(fst)
+
+	if not name in fls:
+		print("Файл " + name + " не найден!")
+		return
+	
+	if data[fst:fst+8] == fs_num:
+		data[fst+25] = data[fst+25] - 1
+	
+	elif data[fst] != 1:
+		print(fst, "не является папкой!")
+		return
+	
+	else:
+		name_len = data[fst+9]
+		data[fst+9+name_len+2] = data[fst+9+name_len+2] - 1
+	
+	fllink_fst = fst+2560+fls.index(name)*8
+	
+
+	ffst = lba2addr(data[fllink_fst:fllink_fst+8])
+
+	segments = []
+
+	for i in range(int(data[ffst + 1 + 8 + len(name) + 1])):
+		segments.append([lba2addr(data[ffst + 512 + i * 9:ffst + 512 + i * 9 + 8]), data[ffst + 512 + i * 9 + 8]])
+	
+
+	for i in segments:
+		for j in range(0,512 * i[1], 1 if FULL_CLEAR else 512):
+			data[i[0] + j] = 0
+
+
+	tmp = data[fllink_fst+8:fllink_fst+8+2048-(fllink_fst-fst)+2048]
+	
+	for i in range(len(tmp)):
+		data[fllink_fst + i] = tmp[i]
+	
+	fst = ffst
+
+	while fst < ffst + 2048:
+		data[fst] = 0
+
+		if FULL_CLEAR:
+			fst += 1
+		else:
+			fst += 512
 
 
 my_guid = 0xec91e6b2782e415185799aaae1547431
@@ -393,6 +476,21 @@ rm - удаление файла')
 			continue
 			
 		load_file(cmd[1], current_offset)
+
+	elif cmd[0] == "read":
+		if len(cmd) != 2:
+			print("Использование: read <имя файла>")
+			continue
+			
+		print(read_file(cmd[1], current_offset))
+	
+	elif cmd[0] == "rm":
+		if len(cmd) == 1:
+			print("Использование: rm <имена файлов>")
+
+		else:	
+			for i in cmd[1:]:
+				remove_file(i, current_offset)
 
 
 file = open(file_name, mode="bw")
