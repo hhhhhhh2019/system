@@ -10,6 +10,77 @@ jmp start
 %include "src/include/disk.asm"
 
 
+;int* entrye
+check_kernel:
+      push ebp
+      push ecx
+      push ebx
+
+      mov dword ebp, [esp + 4 * 2 + 0]
+
+      push dword 16
+      push dword ebp
+      push dword my_guid_fs
+      call arr_cmp
+      add esp, 4 * 3
+
+      cmp eax, 0
+      je .error
+      
+      add ebp, 0x20
+
+      mov ebx, [ebp]
+
+      push dword mem
+      push dword 1
+      push dword ebx
+      call read_sector
+      add esp, 4 * 3
+      
+      mov ecx, [mem + 25] ; folders count
+      cmp ecx, 0
+      ;jz .error
+
+      inc ebx
+
+      push dword mem
+      push dword 1
+      push dword ebx
+      call read_sector
+      add esp, 4 * 3
+
+      mov dword ebx, [mem]
+
+      push dword mem
+      push dword 1
+      push dword ebx
+      call read_sector
+      add esp, 4 * 3
+
+      push dword 0
+      push dword 0
+      push dword 0x0f
+      push dword mem
+      call print_at
+      add esp, 4 * 4
+
+      jmp .ok
+
+
+.error:
+      mov eax, 0
+      jmp .end
+
+.ok:
+      mov eax, 1
+
+.end:
+      pop ebx
+      pop ecx
+      pop ebp
+ret
+
+
 start:
 	push dword gpt
 	push dword 1
@@ -47,7 +118,6 @@ start:
 	cmp dword [entries_count], 2
 	jl no_kernel
 
-
 	push dword table
 	push dword 1
 	push dword 2
@@ -58,31 +128,29 @@ start:
 	push ecx
 
 	mov ebx, table
-	mov ecx, [gpt + 0x50]
+	mov ecx, 0;[gpt + 0x50]
 
 .loop1:
-	push dword 16
-	push dword my_guid_fs
-	push dword ebx
-	call arr_cmp
-	add esp, 4 * 3
+      push dword ebx
+      call check_kernel
+      add esp, 4
 
-	cmp eax, 1
-	je .loop1_end
+      cmp eax, 1
+      je .loop1_end
 
-	cmp ecx, 0
-	je no_kernel
+      cmp byte ecx, [gpt + 0x50]
+      jz no_kernel
 
-	dec ecx
-	add ebx, 128
+      add ebx, 128
+      inc ecx
 jmp .loop1
 
-
 .loop1_end:
+      mov eax, ebx
 	pop ecx
 	pop ebx
 
-
+      
 
 
 jmp error
@@ -136,4 +204,7 @@ entry_size: times 4 db 0
 
 table: times 512 db 0
 
-my_guid_fs: db 0x33, 0x74, 0x54, 0xE1, 0xAA, 0x9A, 0x79, 0x85, 0x51, 0x41, 0x2E, 0x78, 0xB2, 0xE6, 0x91, 0xEC
+mem: times 512 db 0
+
+my_guid_fs_entry: db 0x33, 0x74, 0x54, 0xE1, 0xAA, 0x9A, 0x79, 0x85, 0x51, 0x41, 0x2E, 0x78, 0xB2, 0xE6, 0x91, 0xEC
+my_guid_fs: db 0xD4, 0x0B, 0xE9, 0xBF, 0xA7, 0x15, 0xF6, 0x5A
