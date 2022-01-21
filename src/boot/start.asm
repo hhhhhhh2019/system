@@ -10,52 +10,86 @@ jmp start
 %include "src/include/disk.asm"
 
 
-;int* entrye
+;int* entry
 check_kernel:
       push ebp
       push ecx
       push ebx
 
-      mov dword ebp, [esp + 4 * 2 + 0]
+      mov dword ebp, [esp + 4 * 4 + 0]
 
+      
       push dword 16
+      push dword my_guid_fs_entry
       push dword ebp
+      call arr_cmp
+      add esp, 4 * 3
+
+      jmp .ok
+
+      cmp eax, 0
+      je .error
+
+      add ebp, 0x20
+      
+      push dword mem
+      push dword 1
+      push dword [ebp]
+      call read_sector
+      add esp, 4 * 3
+
+      push dword 8
       push dword my_guid_fs
+      push dword mem
       call arr_cmp
       add esp, 4 * 3
 
       cmp eax, 0
       je .error
+
+      mov byte cl, [mem + 24]
       
-      add ebp, 0x20
+      cmp cl, 0
+      je .error
 
-      mov ebx, [ebp]
-
-      push dword mem
-      push dword 1
-      push dword ebx
-      call read_sector
-      add esp, 4 * 3
-      
-      mov ecx, [mem + 25] ; folders count
-      cmp ecx, 0
-      ;jz .error
-
-      inc ebx
+      mov ebp, [ebp]
+      inc ebp
 
       push dword mem
       push dword 1
-      push dword ebx
+      push dword ebp
       call read_sector
       add esp, 4 * 3
 
-      mov dword ebx, [mem]
+      mov dword ebp, [mem]
 
       push dword mem
       push dword 1
-      push dword ebx
+      push dword ebp
       call read_sector
       add esp, 4 * 3
+ 
+      push dword 3
+      push dword mem + 10
+      push dword sys
+      call arr_cmp
+      add esp, 4 * 3
+
+      cmp eax, 0
+      je .error
+
+      mov byte cl, [mem + 14]
+
+      cmp cl, 0
+      je .error
+
+      inc ebp
+
+      push dword mem
+      push dword 1
+      push dword ebp
+      call read_sector
+      add esp, 3 * 3
 
       push dword 0
       push dword 0
@@ -64,6 +98,8 @@ check_kernel:
       call print_at
       add esp, 4 * 4
 
+
+      
       jmp .ok
 
 
@@ -208,3 +244,4 @@ mem: times 512 db 0
 
 my_guid_fs_entry: db 0x33, 0x74, 0x54, 0xE1, 0xAA, 0x9A, 0x79, 0x85, 0x51, 0x41, 0x2E, 0x78, 0xB2, 0xE6, 0x91, 0xEC
 my_guid_fs: db 0xD4, 0x0B, 0xE9, 0xBF, 0xA7, 0x15, 0xF6, 0x5A
+sys: db "sys"
