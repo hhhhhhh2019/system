@@ -25,8 +25,6 @@ check_kernel:
       call arr_cmp
       add esp, 4 * 3
 
-      jmp .ok
-
       cmp eax, 0
       je .error
 
@@ -43,6 +41,13 @@ check_kernel:
       push dword mem
       call arr_cmp
       add esp, 4 * 3
+
+      push dword 1
+      push dword 0
+      push dword 0x0f
+      push dword mem
+      call print_at
+      add esp, 4 * 4
 
       cmp eax, 0
       je .error
@@ -62,6 +67,13 @@ check_kernel:
       add esp, 4 * 3
 
       mov dword ebp, [mem]
+
+      push dword 2
+      push dword 0
+      push dword 0x0f
+      push dword ebp
+      call print_at
+      add esp, 4 * 4
 
       push dword mem
       push dword 1
@@ -88,16 +100,17 @@ check_kernel:
       push dword mem
       push dword 1
       push dword ebp
-      call read_sector
+      ;call read_sector
       add esp, 3 * 3
 
-      push dword 0
+      mov byte [mem], 'A'
+
+      push dword 1
       push dword 0
       push dword 0x0f
       push dword mem
       call print_at
       add esp, 4 * 4
-
 
       
       jmp .ok
@@ -134,7 +147,7 @@ start:
 	add esp, 4 * 3
 
 	cmp eax, 0
-	je no_kernel
+	je no_gpt
 
 
 	mov dword eax, [gpt + 0x48] ; table lba
@@ -174,8 +187,8 @@ start:
       cmp eax, 1
       je .loop1_end
 
-      cmp byte ecx, [gpt + 0x50]
-      jz no_kernel
+      cmp dword ecx, [gpt + 0x50]
+      je no_kernel
 
       add ebx, 128
       inc ecx

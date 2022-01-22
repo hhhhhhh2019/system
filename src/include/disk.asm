@@ -19,7 +19,7 @@
 get_sector:
       mov eax, [esp + 4]
       and eax, 63
-      inc eax
+      ;inc eax
 ret
 
 ; lba
