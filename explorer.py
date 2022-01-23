@@ -6,8 +6,43 @@ fs_num = [0x5a,0xf6,0x15,0xa7,0xbf,0xe9,0x0b,0xd4]
 fs_num.reverse()
 
 
+H = 16
+S = 63
+
+def lba(s,h,c):
+	return (c * H + h) * S + (s - 1)
+
+def sch(nlba):
+	s = (nlba % S) + 1
+	h = (nlba - (s - 1)) // S % H
+	c = (nlba - (s - 1) - h * S) // (H * S)
+
+	return (s,h,c)
+
+def num2lba(num):
+	return num // 512
+
+def arr2num(arr):
+	res = 0
+
+	for i in range(len(arr)):
+		res |= arr[i] << (i * 8)
+	
+	return res
+
 def lba2addr(lba):
-	return (lba[0] | lba[1] << 8 | lba[2] << 16 | lba[3] << 24) * 512
+	if isinstance(lba, list):
+		lba = arr2num(lba)
+	s,h,c = sch(lba)
+	return ((s - 1)  + h * 63 + c * 63 * 65535) * 512
+
+def add_lba(lba, num):
+	s = (lba & 0xff) + num
+	c = ((lba & 0xffff00) >> 8) + s // 64
+	s -= s // 64 * 64
+	h = ((lba & 0xff000000) >> 24) + c // 65536
+	c -= c // 65536 * 65536
+	return s | (c << 8) | (h << 24)
 
 
 def get_next_free_sector(start, end):
@@ -24,7 +59,7 @@ def get_next_free_sector(start, end):
 
 def get_name(fst):
 	if data[fst] != 1 and data[fst] != 2:
-		print(fst, "не является ни папкой, но файлом!")
+		print(fst, "не является ни папкой, ни файлом!")
 		return
 	
 	name_len = data[fst+9]
@@ -104,10 +139,10 @@ def make_folder(name, fst):
 	ffst = get_next_free_sector(fst+512*8,fs[current_fs_id][1]-512*8)
 
 	data[ffst] = 1
-	data[ffst + 1] = (fst // 512) & 0xff
-	data[ffst + 2] = (fst // 512) >> 8 & 0xff
-	data[ffst + 3] = (fst // 512) >> 16 & 0xff
-	data[ffst + 4] = (fst // 512) >> 24 & 0xff
+	data[ffst + 1] = num2lba(fst) & 0xff
+	data[ffst + 2] = num2lba(fst) >> 8 & 0xff
+	data[ffst + 3] = num2lba(fst) >> 16 & 0xff
+	data[ffst + 4] = num2lba(fst) >> 24 & 0xff
 	data[ffst + 5] = 0
 	data[ffst + 6] = 0
 	data[ffst + 7] = 0
@@ -122,7 +157,7 @@ def make_folder(name, fst):
 		data[ffst+512+i]=0xff
 	
 	for i in range(8):
-		data[fst + 512 + folders_count * 8 - 8 + i] = (ffst // 512) >> (i * 8) & 0xff
+		data[fst + 512 + folders_count * 8 - 8 + i] = num2lba(ffst) >> (i * 8) & 0xff
 
 
 def remove_folder(name, fst):
@@ -186,11 +221,13 @@ def load_file(name, fst):
 
 	ffst = get_next_free_sector(fst+512*8,fs[current_fs_id][1]-512*5)
 
+	print(num2lba(fst))
+
 	data[ffst] = 2
-	data[ffst + 1] = (fst // 512) & 0xff
-	data[ffst + 2] = (fst // 512) >> 8 & 0xff
-	data[ffst + 3] = (fst // 512) >> 16 & 0xff
-	data[ffst + 4] = (fst // 512) >> 24 & 0xff
+	data[ffst + 1] = num2lba(fst) & 0xff
+	data[ffst + 2] = num2lba(fst) >> 8 & 0xff
+	data[ffst + 3] = num2lba(fst) >> 16 & 0xff
+	data[ffst + 4] = num2lba(fst) >> 24 & 0xff
 	data[ffst + 5] = 0
 	data[ffst + 6] = 0
 	data[ffst + 7] = 0
@@ -205,7 +242,7 @@ def load_file(name, fst):
 		data[ffst+512+i]=0xff
 
 	for i in range(8):
-		data[fst + 2560 + files_count * 8 - 8 + i] = (ffst // 512) >> (i * 8) & 0xff
+		data[fst + 2560 + files_count * 8 - 8 + i] = num2lba(ffst) >> (i * 8) & 0xff
 	
 	ncount = len(fdata)
 
@@ -358,7 +395,7 @@ for i in range(sections_count):
 		eoffset = 0
 		for j in range(8):
 			eoffset |= data[1024 + i * 0x80 + 0x28 + j] << (j * 8)
-		fs.append([soffset * 512, eoffset * 512])
+		fs.append([lba2addr(soffset), lba2addr(eoffset)])
 
 
 if len(fs) == 0:

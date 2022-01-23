@@ -2,8 +2,8 @@
 %define DISK
 
 %define ATA_BASE 0x1f0
+%define ATA_CONTROL 0x3f4
 
-%define SECTOR_SIZE   512
 %define IDE_BSY       0x80
 %define IDE_DRDY      0x40
 %define IDE_DF        0x20
@@ -15,164 +15,115 @@
 %define IDE_CMD_WRMUL 0xc5
 
 
-; lba
-get_sector:
-      mov eax, [esp + 4]
-      and eax, 63
-      ;inc eax
+;def add_lba(lba, num):
+;     s = (lba & 0xff) + num
+;     c = ((lba & 0xffff00) >> 8) + s // 64
+;     s -= s // 64 * 64
+;     h = ((lba & 0xff000000) >> 24) + c // 65536
+;     c -= c // 65536 * 65536
+;     return (s, c, h)
+
+; lba, num
+add_lba:
+	push ebp
+	push ebx
+	push edx
+
+	
+	
+
+	pop edx
+	pop ebx
+	pop ebp
 ret
-
-; lba
-get_head:
-      push ebx
-      push edx
-
-      push dword [esp + 4 * 3]
-      call get_sector
-      add esp, 4
-
-      mov ebx, [esp + 4 * 3]
-      dec eax
-      sub ebx, eax
-
-      mov eax, ebx
-      and eax, 0x0000ffff
-
-      mov edx, ebx
-      and edx, 0xffff0000
-      shr edx, 16
-
-      mov ebx, 63
-
-      div bx
-
-      and ax, 0x0f
-      
-      pop edx
-      pop ebx
-ret
-
-; lba
-get_cylinder:
-      push ebx
-      push edx
-
-      push dword [esp + 4 * 3]
-      call get_sector
-      add esp, 4
-
-      dec eax
-
-      mov ebx, [esp + 4 * 3]
-      sub ebx, eax ; ebx = LBA - (s - 1)
-
-      push dword [esp + 4 * 3]
-      call get_head
-      add esp, 4
-
-      mov edx, 63
-      mul edx
-
-      sub ebx, eax ; ebx -= h * 63
-
-      mov eax, ebx
-      and eax, 0x0000ffff
-
-      mov edx, ebx
-      and edx, 0xffff0000
-      shr edx, 16
-
-      mov ebx, 16 * 63
-      div ebx
-      
-      pop edx
-      pop ebx
-ret
-
 
 ; addr, count, buffer
 read_sector:
 	push ebp
 	push ecx
 
-	mov ebp, esp
-
-	push dword [ebp + 4 * 3 + 4 * 1]
-	push dword ATA_BASE + 2 ; sector count
+	push dword [esp + 4 * 3 + 4 * 1]
+	push dword ATA_BASE + 2 ; sectors count
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword [ebp + 4 * 3 + 4 * 0]
-	call get_sector
-      add esp, 4
+	
+	mov eax, [esp + 4 * 3 + 4 * 0] ; addr
+	
+	and eax, 0xff
 	push dword eax
-	push dword ATA_BASE + 3 ; sector
+	push dword ATA_BASE + 3 ; lba
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword [ebp + 4 * 3 + 4 * 0]
-	call get_cylinder
-      add esp, 4
-      mov ecx, eax
-      and eax, 0xff
+
+	mov eax, [esp + 4 * 3 + 4 * 0] ; addr
+	
+	shr eax, 8
+	and eax, 0xff
 	push dword eax
-	push dword ATA_BASE + 4 ; cylinder low
+	push dword ATA_BASE + 4 ; lba
 	call set_port_byte
 	add esp, 4 * 2
 
-	mov eax, ecx
-      and eax, 0xff00
-      shr eax, 8
+
+	mov eax, [esp + 4 * 3 + 4 * 0] ; addr
+	
+	shr eax, 16
+	and eax, 0xff
 	push dword eax
-	push dword ATA_BASE + 5 ; cylinder high
+	push dword ATA_BASE + 5 ; lba
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword [ebp + 4 * 3 + 4 * 0]
-	call get_head
-      add esp, 4
-      or eax, 0xe0
+	
+	mov eax, [esp + 4 * 3 + 4 * 0] ; addr
+
+	shr eax, 24
+	and eax, 0x0f
+	or eax, 0xe0
 	push dword eax
-	push dword ATA_BASE + 6 ; head & drive
+	push dword ATA_BASE + 6
 	call set_port_byte
-	add esp, 4 * 2
+	add esp, 4 * 2 ; head & drive
+
 
 	push dword 0x20
 	push dword ATA_BASE + 7
 	call set_port_byte
 	add esp, 4 * 2
 
-
-.loop:
+	
+.loop1:
 	push dword ATA_BASE + 7
 	call get_port_byte
 	add esp, 4
 
-	test eax, 8
-	jz .loop
-;jmp .loop
+	test al, 8
+	jz .loop1
+	
 
-	mov eax, [ebp + 4 * 3 + 4 * 1]
+	mov ebp, [esp + 4 * 3 + 4 * 2]
 	mov ecx, 256
-	mul ecx
-	mov ecx, eax
 
-	mov ebp, [ebp + 4 * 3 + 4 * 2]
+	push edx
 
-.loop2
+.read_loop:
 	mov dx, ATA_BASE
 	in ax, dx
+	
+	mov [ebp], al
+	mov [ebp + 1], ah
 
-	mov byte [ebp], al
-	mov byte [ebp + 1], ah
-
-	dec ecx
 	add ebp, 2
 
+	dec ecx
+
 	cmp ecx, 0
-	jne .loop2
+	jne .read_loop
 
-
+	
+	pop edx
 	pop ecx
 	pop ebp
 ret

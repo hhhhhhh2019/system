@@ -5,20 +5,19 @@ from uuid import uuid4
 H = 16
 S = 63
 
-def lba(s,c,h):
-	return (c * H + h) * S + s
+def lba(s,h,c):
+	return (c * H + h) * S + (s - 1)
 
 def sch(nlba):
-	c = nlba // (H * S)
-	h = (nlba // S) % H
 	s = (nlba % S) + 1
+	h = (nlba - (s - 1)) // S % H
+	c = (nlba - (s - 1) - h * S) // (H * S)
 
-	return (s,c,h)
+	return (s,h,c)
 
 def num2lba(num):
-	#s,c,h = sch(num)
-	#return s | (c >> 8) | (h >> 24)
-	return num // 512
+	s,h,c = sch(num // 512)
+	return (s - 1) | (h << 8) | (c << 24)
 
 def size_input(ask):
 	ok = False
@@ -111,25 +110,15 @@ def make_simple_fs(offset, msize):
 
 	for i in range(8):
 		data[offset + i] = (0x5af615a7bfe90bd4 >> i * 8) & 0xff
+
+
+	for i in range(8):
+		data[offset + 8 + i] = num2lba(offset) >> i * 8 & 0xff
+
+	for i in range(8):
+		data[offset + 16 + i] = num2lba(offset + size) >> i * 8 & 0xff
 	
-	data[offset + 8 + 2] = (offset // 512) & 0xff
-	data[offset + 8 + 3] = (offset // 512) >> 8 & 0xff
-	data[offset + 8 + 4] = (offset // 512) >> 16 & 0xff
-	data[offset + 8 + 5] = (offset // 512) >> 24 & 0xff
-	data[offset + 8 + 6] = 0
-	data[offset + 8 + 7] = 0
-	data[offset + 8 + 8] = 0
-	data[offset + 8 + 9] = 0
-	
-	data[offset + 8 + 10] = (offset + size) // 512 & 0xff
-	data[offset + 8 + 11] = (offset + size) // 512 >> 8 & 0xff
-	data[offset + 8 + 12] = (offset + size) // 512 >> 16 & 0xff
-	data[offset + 8 + 13] = (offset + size) // 512 >> 32 & 0xff
-	data[offset + 8 + 14] = 0
-	data[offset + 8 + 15] = 0
-	data[offset + 8 + 16] = 0
-	data[offset + 8 + 17] = 0
-	
+
 	for i in range(512 - 26):
 		data[offset + 8 + 18 + i] = 0
 	
@@ -155,10 +144,11 @@ data = list(file.read())
 file.close()
 
 disk_size = len(data)
+print(disk_size)
 
 print("Размер диска: " + num2size(disk_size))
 
-end_lba = disk_size // 512 - 1
+end_lba = num2lba(disk_size)
 
 print("\n\nНастройка gpt")
 

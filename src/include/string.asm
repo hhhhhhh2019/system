@@ -29,7 +29,7 @@ ret
 arr_cmp:
 	push ebp
 	push esi
-      push ebx
+	  push ebx
 
 	mov ebp, [esp + 4 * 4 + 4 * 0]
 	mov esi, [esp + 4 * 4 + 4 * 1]
@@ -58,7 +58,7 @@ jmp .loop
 	mov eax, 0
 
 .end:
-      pop ebx
+	  pop ebx
 	pop esi
 	pop ebp
 ret

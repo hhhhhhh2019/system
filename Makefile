@@ -1,7 +1,7 @@
 QEMU-FLAGS=
 
 
-all: compile setup_fs
+all: boot.img compile setup_fs
 	qemu-system-i386 build/boot.img $(QEMU-FLAGS)
 
 run:
@@ -13,6 +13,9 @@ update: compile run
 compile: boot.bin start.bin kernel.bin
 	dd if=build/boot.bin of=build/boot.img bs=512 conv=notrunc seek=0
 	dd if=build/start.bin of=build/boot.img bs=512 conv=notrunc seek=34
+
+boot.img: src/disk.asm
+	nasm $< -o build/$@
 
 boot.bin: src/boot/boot.asm
 	nasm $< -o build/$@

@@ -12,121 +12,95 @@ jmp start
 
 ;int* entry
 check_kernel:
-      push ebp
-      push ecx
-      push ebx
+	push ebp
+	push ecx
+	push ebx
 
-      mov dword ebp, [esp + 4 * 4 + 0]
+	mov dword ebp, [esp + 4 * 4 + 0]
 
-      
-      push dword 16
-      push dword my_guid_fs_entry
-      push dword ebp
-      call arr_cmp
-      add esp, 4 * 3
+	
+	push dword 16
+	push dword my_guid_fs_entry
+	push dword ebp
+	call arr_cmp
+	add esp, 4 * 3
 
-      cmp eax, 0
-      je .error
+	cmp eax, 0
+	je .error
 
-      add ebp, 0x20
-      
-      push dword mem
-      push dword 1
-      push dword [ebp]
-      call read_sector
-      add esp, 4 * 3
 
-      push dword 8
-      push dword my_guid_fs
-      push dword mem
-      call arr_cmp
-      add esp, 4 * 3
+	add ebp, 0x20
+	mov dword ebp, [ebp]
+	
+	push dword mem
+	push dword 1
+	push dword ebp
+	call read_sector ; read fs head
+	add esp, 4 * 3
 
-      push dword 1
-      push dword 0
-      push dword 0x0f
-      push dword mem
-      call print_at
-      add esp, 4 * 4
 
-      cmp eax, 0
-      je .error
+	push dword 8
+	push dword my_guid_fs
+	push dword mem
+	call arr_cmp
+	add esp, 4 * 3
 
-      mov byte cl, [mem + 24]
-      
-      cmp cl, 0
-      je .error
+	cmp eax, 0
+	je .error
+	
+	cmp byte [mem + 24], 0
+	jz .error ; if folders count == 0 -> error
+	
+	inc ebp
+	
+	push dword mem
+	push dword 1
+	push dword ebp
+	call read_sector ; folders links
+	add esp, 4 * 3
 
-      mov ebp, [ebp]
-      inc ebp
+	mov dword ebp, [mem]
 
-      push dword mem
-      push dword 1
-      push dword ebp
-      call read_sector
-      add esp, 4 * 3
+	
+	push dword mem
+	push dword 1
+	push dword ebp
+	call read_sector ; "sys" folder header
+	add esp, 4 * 3
 
-      mov dword ebp, [mem]
 
-      push dword 2
-      push dword 0
-      push dword 0x0f
-      push dword ebp
-      call print_at
-      add esp, 4 * 4
+	push dword 3
+	push dword mem + 10
+	push dword sys
+	call arr_cmp
+	add esp, 4 * 3
 
-      push dword mem
-      push dword 1
-      push dword ebp
-      call read_sector
-      add esp, 4 * 3
- 
-      push dword 3
-      push dword mem + 10
-      push dword sys
-      call arr_cmp
-      add esp, 4 * 3
+	cmp eax, 0
+	je .error
 
-      cmp eax, 0
-      je .error
 
-      mov byte cl, [mem + 14]
+	push dword 1
+	push dword 0
+	push dword 0x0f
+	push dword mem
+	call print_at
+	add esp, 4 * 4
 
-      cmp cl, 0
-      je .error
 
-      inc ebp
-
-      push dword mem
-      push dword 1
-      push dword ebp
-      ;call read_sector
-      add esp, 3 * 3
-
-      mov byte [mem], 'A'
-
-      push dword 1
-      push dword 0
-      push dword 0x0f
-      push dword mem
-      call print_at
-      add esp, 4 * 4
-
-      
-      jmp .ok
+	jmp .ok
 
 
 .error:
-      mov eax, 0
-      jmp .end
+	mov eax, 0
+	jmp .end
 
 .ok:
-      mov eax, 1
+	mov eax, 1
 
 .end:
-      pop ebx
-      pop ecx
-      pop ebp
+	pop ebx
+	pop ecx
+	pop ebp
 ret
 
 
@@ -180,26 +154,26 @@ start:
 	mov ecx, 0;[gpt + 0x50]
 
 .loop1:
-      push dword ebx
-      call check_kernel
-      add esp, 4
+	push dword ebx
+	call check_kernel
+	add esp, 4
 
-      cmp eax, 1
-      je .loop1_end
+	cmp eax, 1
+	je .loop1_end
 
-      cmp dword ecx, [gpt + 0x50]
-      je no_kernel
+	cmp dword ecx, [gpt + 0x50]
+	je no_kernel
 
-      add ebx, 128
-      inc ecx
+	add ebx, 128
+	inc ecx
 jmp .loop1
 
 .loop1_end:
-      mov eax, ebx
+	mov eax, ebx
 	pop ecx
 	pop ebx
 
-      
+	
 
 
 jmp error
