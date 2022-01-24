@@ -1,5 +1,6 @@
+[org 0x500]
 [bits 32]
-[org 500h]
+
 
 ; get_cursor_pos use interrupts
 ; but interrupts now isn't working -> print isn't working, use print_at
@@ -68,7 +69,6 @@ check_kernel:
 	call read_sector ; "sys" folder header
 	add esp, 4 * 3
 
-
 	push dword 3
 	push dword mem + 10
 	push dword sys
@@ -79,13 +79,42 @@ check_kernel:
 	je .error
 
 
-	push dword 1
-	push dword 0
-	push dword 0x0f
-	push dword mem
-	call print_at
-	add esp, 4 * 4
+	add ebp, 5
 
+	push dword mem
+	push dword 1
+	push dword ebp
+	call read_sector ; files link
+	add esp, 4 * 3
+
+	mov dword ebp, [mem]
+
+
+	push dword mem
+	push dword 1
+	push dword ebp
+	call read_sector ; kernel inode
+	add esp, 4 * 3
+
+
+	inc ebp
+
+	push dword mem
+	push dword 1
+	push dword ebp
+	call read_sector ; sections link
+	add esp, 4 * 3
+
+
+	mov dword ebp, [mem]
+	mov ecx, 0
+	mov cl, [mem + 9]
+
+	push dword 0x1100
+	push dword ecx
+	push dword ebp
+	call read_sector ; kernel code
+	add esp, 4 * 3
 
 	jmp .ok
 
@@ -159,7 +188,7 @@ start:
 	add esp, 4
 
 	cmp eax, 1
-	je .loop1_end
+	je 0x1100
 
 	cmp dword ecx, [gpt + 0x50]
 	je no_kernel
@@ -172,8 +201,6 @@ jmp .loop1
 	mov eax, ebx
 	pop ecx
 	pop ebx
-
-	
 
 
 jmp error

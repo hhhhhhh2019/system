@@ -1,4 +1,4 @@
-[org 500h]
+[org 0x1100]
 [bits 32]
 
 jmp start
