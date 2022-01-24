@@ -80,7 +80,7 @@ init_pm:
 	mov esp, ebp
 
 	push dword [boot_disk]
-	jmp 500h
+	jmp 0x500
 
 times 512-($-$$)-2 db 0
 
