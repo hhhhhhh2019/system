@@ -1,4 +1,5 @@
 QEMU-FLAGS=
+dd-flags = conv=notrunc
 
 
 all: boot.img compile setup_fs
@@ -9,10 +10,15 @@ run:
 
 update: compile run
 
+update_all: compile update_kernel run
+
 
 compile: boot.bin start.bin kernel.bin
-	dd if=build/boot.bin of=build/boot.img bs=512 conv=notrunc seek=0
-	dd if=build/start.bin of=build/boot.img bs=512 conv=notrunc seek=34
+	dd if=build/boot.bin of=build/boot.img bs=512 $(dd-flags) seek=0
+	dd if=build/start.bin of=build/boot.img bs=512 $(dd-flags) seek=34
+
+update_kernel:
+	dd if=build/kernel.bin of=build/boot.img bs=512 $(dd-flags) seek=79
 
 boot.img: src/disk.asm
 	nasm $< -o build/$@
