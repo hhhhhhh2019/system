@@ -81,7 +81,3 @@ init_pm:
 
 	push dword [boot_disk]
 	jmp 0x500
-
-times 512-($-$$)-2 db 0
-
-dw 0xaa55

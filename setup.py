@@ -16,8 +16,7 @@ def sch(nlba):
 	return (s,h,c)
 
 def num2lba(num):
-	s,h,c = sch(num // 512)
-	return (s - 1) | (h << 8) | (c << 24)
+	return num // 512
 
 def size_input(ask):
 	ok = False
@@ -94,19 +93,8 @@ def num2size(num):
 		return str(num / 1024 / 1024 / 1024) + "ГБ"
 
 
-def make_simple_fs(offset, msize):
+def make_simple_fs(offset, size):
 	size = 0
-
-	while True:
-		size = size_input("Размер ф.с.: ")
-		if size > msize:
-			ask = input("Размер раздела меньше чем размер ф.с., устроновить размер в " + num2size(msize) + "?(д/н): ").lower()
-
-			if ask == "y" or ask == "д":
-				size = msize
-				break
-		else:
-			break
 
 	for i in range(8):
 		data[offset + i] = (0x5af615a7bfe90bd4 >> i * 8) & 0xff
@@ -205,7 +193,7 @@ lba_copy_gpt_header = end_lba
 data[512 + 32 + 0] = lba_copy_gpt_header & 0xff
 data[512 + 32 + 1] = lba_copy_gpt_header >> 8 & 0xff
 data[512 + 32 + 2] = lba_copy_gpt_header >> 16 & 0xff
-data[512 + 32 + 3] = 0#lba_copy_gpt_header >> 24 & 0xff
+data[512 + 32 + 3] = lba_copy_gpt_header >> 24 & 0xff
 data[512 + 32 + 4] = 0
 data[512 + 32 + 5] = 0
 data[512 + 32 + 6] = 0
