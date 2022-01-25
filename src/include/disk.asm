@@ -1,6 +1,8 @@
 %ifndef DISK
 %define DISK
 
+%include "src/include/port.asm"
+
 %define ATA_BASE 0x1f0
 %define ATA_CONTROL 0x3f4
 
@@ -14,28 +16,6 @@
 %define IDE_CMD_RDMUL 0xc4
 %define IDE_CMD_WRMUL 0xc5
 
-
-;def add_lba(lba, num):
-;     s = (lba & 0xff) + num
-;     c = ((lba & 0xffff00) >> 8) + s // 64
-;     s -= s // 64 * 64
-;     h = ((lba & 0xff000000) >> 24) + c // 65536
-;     c -= c // 65536 * 65536
-;     return (s, c, h)
-
-; lba, num
-add_lba:
-	push ebp
-	push ebx
-	push edx
-
-	
-	
-
-	pop edx
-	pop ebx
-	pop ebp
-ret
 
 ; addr, count, buffer
 read_sector:
@@ -86,9 +66,17 @@ read_sector:
 	push dword ATA_BASE + 6
 	call set_port_byte
 	add esp, 4 * 2 ; head & drive
+	
 
+	mov eax, IDE_CMD_READ
 
-	push dword 0x20
+	cmp dword [esp + 4 * 3 + 4 * 1], 1
+	je .label
+
+	mov eax, IDE_CMD_RDMUL
+
+.label:
+	push dword eax
 	push dword ATA_BASE + 7
 	call set_port_byte
 	add esp, 4 * 2
@@ -104,7 +92,8 @@ read_sector:
 	
 
 	mov ebp, [esp + 4 * 3 + 4 * 2]
-	mov ecx, 256
+	mov dword ecx, [esp + 4 * 3 + 4 * 1]
+	shl ecx, 8
 
 	push edx
 

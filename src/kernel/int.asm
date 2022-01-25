@@ -296,13 +296,9 @@ iret
 irq0:
 	cli
 
-	inc dword [timer]
-	
 	push dword 0
 	call irq_common_stub
 	add esp, 4
-	
-	;sti
 iret
 
 ; keyboard

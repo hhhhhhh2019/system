@@ -34,4 +34,53 @@ memcpy_end:
 	pop ebp
 ret
 
+
+; *mem, char value, int count
+memset:
+	push ecx
+	push ebp
+	push ebx
+
+	mov ebp, [esp + 4 * 4 + 4 * 0]
+	mov ebx, [esp + 4 * 4 + 4 * 1]
+	mov ecx, [esp + 4 * 4 + 4 * 2]
+
+
+.loop:
+	mov [ebp], bl
+	inc ebp
+	dec ecx
+
+	cmp ecx, 0
+	jne .loop
+	
+	pop ebx
+	pop ebp
+	pop ecx
+ret
+
+; *mem, int16 value, int count
+memset_word:
+	push ecx
+	push ebp
+	push ebx
+
+	mov ebp, [esp + 4 * 4 + 4 * 0]
+	mov ebx, [esp + 4 * 4 + 4 * 1]
+	mov ecx, [esp + 4 * 4 + 4 * 2]
+
+
+.loop:
+	mov [ebp], bx
+	add ebp, 2
+	dec ecx
+
+	cmp ecx, 0
+	jne .loop
+	
+	pop ebx
+	pop ebp
+	pop ecx
+ret
+
 %endif

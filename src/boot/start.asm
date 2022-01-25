@@ -188,7 +188,7 @@ start:
 	add esp, 4
 
 	cmp eax, 1
-	je 0x1100
+	je load_kernel
 
 	cmp dword ecx, [gpt + 0x50]
 	je no_kernel
@@ -239,11 +239,22 @@ error:
 	jmp $
 
 
+load_kernel:
+	push dword 0
+	push dword 0
+	push dword 0x0f
+	push dword kernel_msg
+	call print_at
+	add esp, 4 * 4
+
+	jmp 0x1100
+
+
 no_gpt_msg: db "GPT not found!", 0
 no_sectons_msg: db "No section found!", 0
 no_kernel_msg: db "Kernel not found!", 0
 
-kernel_msg: db "Kernel found.", 0
+kernel_msg: db "Kernel found. Loading...", 0
 
 gpt: times 512 db 0
 gpt_sign: db "EFI PART", 0

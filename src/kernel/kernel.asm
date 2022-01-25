@@ -1,36 +1,22 @@
 [org 0x1100]
 [bits 32]
 
-jmp $
 
 jmp start
 
-%include "src/include/screen.asm"
+%include "src/include/string.asm"
 %include "src/kernel/isr.asm"
-;%include "src/include/keyboard.asm"
-;%include "src/include/timer.asm"
-%include "src/include/disk.asm"
-
+%include "src/include/keyboard.asm"
+;%include "src/include/disk.asm"
 
 start:
 	call init_idt
+	call keyboard_init
+	;sti
 
-	sti
-
-	push dword msg
-	push dword 1
-	push dword 2
-	call read_sector
+	push dword MAX_COLS * MAX_ROWS * 2
+	push dword 0x0f00
+	push dword 0xb8000
+	call memset_word
 	add esp, 4 * 3
-
-	push dword 0
-	push dword 0
-	push dword 0x0f
-	push dword msg
-	call print_at
-	add esp, 4 * 4
 jmp $
-
-boot_disk: dw 0
-
-msg: times 512 db '0'

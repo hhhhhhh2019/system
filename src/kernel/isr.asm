@@ -44,7 +44,7 @@ set_idt_gate:
 	and ebx, 0x0000ffff
 	mov [idt + ecx + 6], bx ; offset_high
 
-	mov word [idt + ecx + 2], 0b1000
+	mov word [idt + ecx + 2], 0xb1000
 
 	mov byte [idt + ecx + 5], 0x8E ; flags
 
@@ -117,12 +117,12 @@ init_pics:
 	add esp, 4 * 2
 
 
-	push dword 0x0
+	push dword 0xff
 	push dword PIC1 + 1
 	call set_port_byte
 	add esp, 4 * 2
 
-	push dword 0x0
+	push dword 0xff
 	push dword PIC2 + 1
 	call set_port_byte
 	add esp, 4 * 2
